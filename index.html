@@ -514,6 +514,7 @@ Be specific about what you want — the tool will handle styling it in your voic
                     <div class="btn-row">
                         <button id="btn-copy-output" class="btn-small">Copy</button>
                         <button id="btn-regenerate" class="btn-small">Regenerate</button>
+                        <button id="btn-view-feedback" class="btn-small btn-view-feedback hidden">View Feedback</button>
                         <button id="btn-edit-style" class="btn-small btn-edit-style">Edit Style</button>
                     </div>
 
@@ -761,15 +762,21 @@ Be specific about what you want — the tool will handle styling it in your voic
                             <div id="style-preview-metrics" class="style-preview-metrics"></div>
                         </div>
                         
+                        <!-- Feedback History Section -->
+                        <div id="feedback-history-section" class="feedback-history-section hidden">
+                            <h4>Feedback History <span id="feedback-count" class="feedback-count"></span></h4>
+                            <div id="feedback-history-list" class="feedback-history-list"></div>
+                        </div>
+                        
                         <div class="style-studio-feedback">
-                            <label for="style-feedback">Additional style guidance (optional):</label>
+                            <label for="style-feedback">Additional style guidance:</label>
                             <textarea id="style-feedback" placeholder="E.g., 'Make it sound more confident' or 'Add a bit of humor but keep it professional'"></textarea>
                         </div>
                     </div>
                     
                     <div class="style-studio-footer">
                         <button id="btn-style-studio-cancel" class="btn-secondary">Cancel</button>
-                        <button id="btn-style-studio-apply" class="btn-primary">Apply Styles</button>
+                        <button id="btn-style-studio-apply" class="btn-primary">Save Styles</button>
                         <button id="btn-style-studio-regenerate" class="btn-primary hidden">Regenerate with Styles</button>
                     </div>
                 </div>

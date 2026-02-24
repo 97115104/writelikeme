@@ -11,6 +11,7 @@
         appliedStyleTags: [], // Styles used for last generation
         styleFeedback: '', // Custom style feedback from studio
         appliedStyleFeedback: '', // Feedback used for last generation
+        feedbackHistory: [], // Track all feedback with timestamps: [{text, timestamp, appliedStyles}]
         profStyleChecked: false, // Track if professional style modal was shown for current prompt
         profStyleOverride: null // Professional style overrides from modal
     };
@@ -121,6 +122,7 @@
         elements.generatedContent = document.getElementById('generated-content');
         elements.btnCopyOutput = document.getElementById('btn-copy-output');
         elements.btnRegenerate = document.getElementById('btn-regenerate');
+        elements.btnViewFeedback = document.getElementById('btn-view-feedback');
         elements.btnEditStyle = document.getElementById('btn-edit-style');
         elements.slopCheck = document.getElementById('slop-check');
         elements.slopIssues = document.getElementById('slop-issues');
@@ -153,6 +155,9 @@
         elements.btnStyleStudioRegenerate = document.getElementById('btn-style-studio-regenerate');
         elements.stylePreviewSection = document.getElementById('style-preview-section');
         elements.stylePreviewMetrics = document.getElementById('style-preview-metrics');
+        elements.feedbackHistorySection = document.getElementById('feedback-history-section');
+        elements.feedbackHistoryList = document.getElementById('feedback-history-list');
+        elements.feedbackCount = document.getElementById('feedback-count');
 
         // Platform artifacts
         elements.platformArtifacts = document.getElementById('platform-artifacts');
@@ -322,6 +327,7 @@
         elements.btnRegenerate.addEventListener('click', generateContent);
         elements.btnCopyOutput.addEventListener('click', copyOutput);
         elements.btnEditStyle?.addEventListener('click', openStyleStudio);
+        elements.btnViewFeedback?.addEventListener('click', openStyleStudio); // Opens style studio which shows feedback history
         elements.btnBackProfile.addEventListener('click', () => goToStep('profile'));
 
         // Content type category and tone selection
@@ -2397,7 +2403,7 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         informal: {
             label: 'Casual',
             description: 'Write in a relaxed, conversational tone. Use contractions, casual phrasing, and approachable language.',
-            keywords: ['casual', 'friendly', 'hey', 'cool', 'awesome', 'lol', 'btw', 'chat', 'dm', 'message', 'chill'],
+            keywords: ['casual', 'friendly', 'hey', 'cool', 'chill', 'lol', 'btw', 'chat', 'dm', 'message', 'hanging out', 'laid back'],
             sentiment: 'positive',
             category: 'tone'
         },
@@ -2419,14 +2425,14 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         warm: {
             label: 'Warm',
             description: 'Create a sense of personal connection. Use inclusive language and genuine warmth.',
-            keywords: ['warm', 'warmly', 'heartfelt', 'sincere', 'genuine', 'close', 'dear', 'fondly'],
+            keywords: ['warm', 'warmly', 'heartfelt', 'sincere', 'genuine', 'close', 'dear', 'fondly', 'love how', 'love that', 'beautiful', 'special', 'unique', 'authentic', 'authenticity', 'real', 'true to'],
             sentiment: 'warm',
             category: 'tone'
         },
         understanding: {
             label: 'Understanding',
             description: 'Show that you truly hear and acknowledge the other person. Validate their perspective without judgment.',
-            keywords: ['understand', 'understanding', 'get it', 'makes sense', 'hear you', 'see where', 'appreciate', 'acknowledge'],
+            keywords: ['understand', 'understanding', 'get it', 'makes sense', 'hear you', 'see where', 'appreciate', 'acknowledge', 'relate', 'can relate', 'resonates', 'feel the same', 'know what', 'been there'],
             sentiment: 'warm',
             category: 'tone'
         },
@@ -2447,7 +2453,7 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         encouraging: {
             label: 'Encouraging',
             description: 'Motivate and inspire confidence. Highlight potential and express belief in the person or outcome.',
-            keywords: ['encourage', 'encouraging', 'you can', 'believe in', 'confident', 'proud', 'inspiring', 'motivation'],
+            keywords: ['encourage', 'encouraging', 'you can', 'believe in', 'confident', 'proud', 'inspiring', 'motivation', 'unique', 'special', 'amazing', 'incredible', 'capable', 'strength'],
             sentiment: 'positive',
             category: 'tone'
         },
@@ -2462,14 +2468,14 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         empathetic: {
             label: 'Empathetic',
             description: 'Show understanding and compassion. Acknowledge feelings and validate emotions without being dismissive.',
-            keywords: ['comfort', 'support', 'empathy', 'sympathy', 'care about', 'worried about', 'concerned', 'help with'],
+            keywords: ['comfort', 'support', 'empathy', 'sympathy', 'care about', 'worried about', 'concerned', 'help with', 'feel', 'feeling', 'connect', 'connection', 'relating', 'relate to', 'emotional', 'deeply'],
             sentiment: 'warm',
             category: 'emotional'
         },
         upbeat: {
             label: 'Upbeat',
             description: 'Bring energy and positivity. Use enthusiastic language and highlight the exciting aspects.',
-            keywords: ['excited', 'amazing', 'thrilled', 'celebrate', 'congrats', 'congratulations', 'happy', 'great news', 'awesome news', 'announcement'],
+            keywords: ['excited', 'amazing', 'thrilled', 'celebrate', 'congrats', 'congratulations', 'happy', 'great news', 'awesome news', 'announcement', 'awesome', 'love', 'loving', 'enjoying', 'enjoy', 'wonderful', 'fantastic'],
             sentiment: 'positive',
             category: 'emotional'
         },
@@ -2498,7 +2504,7 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         storytelling: {
             label: 'Narrative',
             description: 'Use narrative structure. Include specific details that bring the story to life.',
-            keywords: ['story', 'narrative', 'journey', 'experience', 'happened', 'remember when', 'tale', 'memoir'],
+            keywords: ['story', 'narrative', 'journey', 'experience', 'happened', 'remember when', 'tale', 'memoir', 'personal', 'myself', 'my own', 'I believe', 'I think', 'I wonder', 'reflection', 'reflecting', 'watching', 'observed'],
             sentiment: 'neutral',
             category: 'purpose'
         },
@@ -2527,12 +2533,13 @@ Adapt the writing to fit this platform's culture and expectations while maintain
     };
 
     // Sentiment color mapping for style tags
+    // Blue = sad/somber, Red = aggressive/assertive, Green = positive, Orange = warm, Purple = neutral/ambiguous
     const SENTIMENT_COLORS = {
-        positive: { bg: '#e8f5e9', border: '#4caf50', text: '#2e7d32' },
-        warm: { bg: '#fff3e0', border: '#ff9800', text: '#e65100' },
-        neutral: { bg: '#f5f5f5', border: '#9e9e9e', text: '#424242' },
-        serious: { bg: '#e3f2fd', border: '#2196f3', text: '#1565c0' },
-        assertive: { bg: '#fce4ec', border: '#e91e63', text: '#c2185b' }
+        positive: { bg: '#e8f5e9', border: '#4caf50', text: '#2e7d32' },     // Green - positive emotions
+        warm: { bg: '#fff3e0', border: '#ff9800', text: '#e65100' },         // Orange - warm/caring
+        neutral: { bg: '#f3e5f5', border: '#9c27b0', text: '#6a1b9a' },      // Purple - could be either
+        serious: { bg: '#e3f2fd', border: '#2196f3', text: '#1565c0' },     // Blue - sad/somber
+        assertive: { bg: '#ffebee', border: '#f44336', text: '#c62828' }    // Red - aggressive/forceful
     };
 
     // Generate STYLE_KEYWORDS and STYLE_LABELS from STYLE_BUILDER for compatibility
@@ -2624,17 +2631,21 @@ Adapt the writing to fit this platform's culture and expectations while maintain
     // --- Style Sketch Studio ---
 
     function openStyleStudio() {
-        const hasGeneratedContent = !elements.outputSection?.classList.contains('hidden');
-        
-        // Show regenerate button if there's generated content
-        elements.btnStyleStudioApply.classList.toggle('hidden', hasGeneratedContent);
-        elements.btnStyleStudioRegenerate.classList.toggle('hidden', !hasGeneratedContent);
-        
         // Render all style options
         renderStyleStudioOptions();
         
+        // Render feedback history
+        renderFeedbackHistory();
+        
         // Populate feedback if any
         elements.styleFeedback.value = state.styleFeedback || '';
+        
+        // Update button text based on current state
+        updateStyleStudioButtons();
+        
+        // Add dynamic button text update on feedback input
+        elements.styleFeedback.removeEventListener('input', updateStyleStudioButtons);
+        elements.styleFeedback.addEventListener('input', updateStyleStudioButtons);
         
         showModal('style-studio-modal');
     }
@@ -2855,23 +2866,146 @@ Adapt the writing to fit this platform's culture and expectations while maintain
     }
 
     function applyStyleStudio() {
-        state.styleFeedback = elements.styleFeedback.value.trim();
+        const newFeedback = elements.styleFeedback.value.trim();
+        
+        // Track feedback if it's new
+        if (newFeedback && newFeedback !== state.styleFeedback) {
+            addFeedbackToHistory(newFeedback);
+        }
+        
+        state.styleFeedback = newFeedback;
         hideModal('style-studio-modal');
         updateStyleSuggestions();
+        updateViewFeedbackButton();
     }
 
     function regenerateWithStyles() {
-        state.styleFeedback = elements.styleFeedback.value.trim();
+        const newFeedback = elements.styleFeedback.value.trim();
+        
+        // Track feedback if it's new
+        if (newFeedback && newFeedback !== state.appliedStyleFeedback) {
+            addFeedbackToHistory(newFeedback);
+        }
+        
+        state.styleFeedback = newFeedback;
         // Store what's being applied for diff tracking
         state.appliedStyleTags = [...state.selectedStyleTags];
         state.appliedStyleFeedback = state.styleFeedback;
         hideModal('style-studio-modal');
         updateStyleSuggestions();
+        updateViewFeedbackButton();
         generateContent();
+    }
+    
+    function addFeedbackToHistory(feedback) {
+        state.feedbackHistory.push({
+            text: feedback,
+            timestamp: Date.now(),
+            appliedStyles: [...state.selectedStyleTags]
+        });
+    }
+    
+    function renderFeedbackHistory() {
+        if (!elements.feedbackHistorySection || !elements.feedbackHistoryList) return;
+        
+        if (state.feedbackHistory.length === 0) {
+            elements.feedbackHistorySection.classList.add('hidden');
+            return;
+        }
+        
+        elements.feedbackHistorySection.classList.remove('hidden');
+        
+        // Update count
+        if (elements.feedbackCount) {
+            elements.feedbackCount.textContent = `(${state.feedbackHistory.length})`;
+        }
+        
+        let html = '';
+        state.feedbackHistory.forEach((entry, idx) => {
+            const timeAgo = getTimeAgo(entry.timestamp);
+            const isLatest = idx === state.feedbackHistory.length - 1;
+            const styleCount = entry.appliedStyles.length;
+            const changeFromPrev = idx > 0 ? calculateFeedbackChange(idx) : null;
+            
+            html += `
+                <div class="feedback-history-item ${isLatest ? 'latest' : ''}">
+                    <div class="feedback-text">"${escapeHtml(entry.text)}"</div>
+                    <div class="feedback-meta">
+                        <span class="feedback-time">${timeAgo}</span>
+                        ${styleCount > 0 ? `<span class="feedback-styles">${styleCount} style${styleCount !== 1 ? 's' : ''}</span>` : ''}
+                        ${changeFromPrev !== null ? `<span class="feedback-change ${changeFromPrev >= 0 ? 'positive' : 'negative'}">${changeFromPrev >= 0 ? '+' : ''}${changeFromPrev}% impact</span>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        elements.feedbackHistoryList.innerHTML = html;
+    }
+    
+    function calculateFeedbackChange(index) {
+        // Simple heuristic: calculate change based on style count and feedback length
+        const current = state.feedbackHistory[index];
+        const prev = state.feedbackHistory[index - 1];
+        
+        const currScore = current.appliedStyles.length * 10 + Math.min(current.text.length / 10, 30);
+        const prevScore = prev.appliedStyles.length * 10 + Math.min(prev.text.length / 10, 30);
+        
+        return Math.round(((currScore - prevScore) / Math.max(prevScore, 1)) * 100);
+    }
+    
+    function getTimeAgo(timestamp) {
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+        
+        if (seconds < 60) return 'just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        return `${Math.floor(seconds / 86400)}d ago`;
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function updateViewFeedbackButton() {
+        if (!elements.btnViewFeedback) return;
+        
+        if (state.feedbackHistory.length > 0) {
+            elements.btnViewFeedback.classList.remove('hidden');
+            elements.btnViewFeedback.textContent = `View Feedback (${state.feedbackHistory.length})`;
+        } else {
+            elements.btnViewFeedback.classList.add('hidden');
+        }
+    }
+    
+    function updateStyleStudioButtons() {
+        const hasFeedback = elements.styleFeedback.value.trim().length > 0;
+        const hasGeneratedContent = !elements.outputSection?.classList.contains('hidden');
+        
+        if (hasGeneratedContent) {
+            // Show regenerate button, hide apply
+            elements.btnStyleStudioApply.classList.add('hidden');
+            elements.btnStyleStudioRegenerate.classList.remove('hidden');
+            
+            // Update button text based on feedback
+            if (hasFeedback) {
+                elements.btnStyleStudioRegenerate.textContent = 'Regenerate with Feedback & Styles';
+            } else {
+                elements.btnStyleStudioRegenerate.textContent = 'Regenerate with Styles';
+            }
+        } else {
+            // Show apply button, hide regenerate
+            elements.btnStyleStudioApply.classList.remove('hidden');
+            elements.btnStyleStudioRegenerate.classList.add('hidden');
+            
+            // Update button text
+            elements.btnStyleStudioApply.textContent = hasFeedback ? 'Save Feedback & Styles' : 'Save Styles';
+        }
     }
 
     function getStyleOverridePrompt() {
-        if (state.selectedStyleTags.length === 0 && !state.styleFeedback) return '';
+        if (state.selectedStyleTags.length === 0 && !state.styleFeedback && state.feedbackHistory.length === 0) return '';
         
         let prompt = '';
         
@@ -2885,8 +3019,23 @@ Adapt the writing to fit this platform's culture and expectations while maintain
             }
         }
         
+        // Include all feedback history for accumulated learning
+        if (state.feedbackHistory.length > 0) {
+            prompt += '\n\n## STYLE FEEDBACK HISTORY\n\nApply all of this guidance cumulatively:\n';
+            state.feedbackHistory.forEach((entry, idx) => {
+                prompt += `\n${idx + 1}. "${entry.text}"`;
+            });
+        }
+        
+        // Add current feedback if different from last history entry
         if (state.styleFeedback) {
-            prompt += '\n\n## ADDITIONAL STYLE GUIDANCE\n\n' + state.styleFeedback;
+            const lastHistoryFeedback = state.feedbackHistory.length > 0 
+                ? state.feedbackHistory[state.feedbackHistory.length - 1].text 
+                : '';
+            
+            if (state.styleFeedback !== lastHistoryFeedback) {
+                prompt += '\n\n## CURRENT STYLE GUIDANCE\n\n' + state.styleFeedback;
+            }
         }
         
         return prompt;
