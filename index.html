@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write Like Me</title>
+    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+</head>
+<body>
+    <h1>Write Like Me</h1>
+    <p class="subtitle">Create a writing profile from your samples and generate AI text in your unique style</p>
+    <div class="how-to-use-row">
+        <button id="btn-info" class="btn-how-to-use">How to use</button>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>About Write Like Me</h3>
+                <button id="btn-close-info" class="btn-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Write Like Me</strong> is a free, serverless tool that analyzes your writing samples and creates a detailed writing profile. Use that profile to generate new text in your unique style, free of common AI writing patterns.</p>
+
+                <h4>How it works</h4>
+                <p>Share your writing samples via URL, copy-paste, or file upload. The tool analyzes your style, tone, word choice, sentence structure, and other characteristics to build a comprehensive writing profile. Use the profile to generate new content that matches your voice.</p>
+
+                <h4>Input methods</h4>
+                <p><strong>URL</strong> — Enter URLs to blog posts, articles, or web pages. The tool fetches and extracts the text content automatically.</p>
+                <p><strong>Paste</strong> — Copy and paste writing samples directly into the text area. Add multiple samples separated by line breaks.</p>
+                <p><strong>Upload</strong> — Upload text files (.txt, .md, .doc) containing your writing samples. Supports batch uploads of multiple files.</p>
+
+                <h4>Writing profile</h4>
+                <p>The writing profile is an in-depth analysis that includes: style characteristics (formal/informal, descriptive/concise), tone and sentiment patterns, vocabulary complexity and word choice preferences, sentence structure and length patterns, reading level analysis, grammar and punctuation patterns, and unique stylistic markers.</p>
+
+                <h4>Content types</h4>
+                <p><strong>Social Media (Personal)</strong> — For X, Instagram, Twitter. Casual, engaging, personal voice.</p>
+                <p><strong>Social Media (Professional)</strong> — For LinkedIn, professional networking. Polished but authentic.</p>
+                <p><strong>Blog (Personal)</strong> — Conversational, story-driven, personal essays.</p>
+                <p><strong>Blog (Professional)</strong> — Informative, authoritative, expertise-focused.</p>
+                <p><strong>Long-form Writing</strong> — Articles, essays, reports with sustained arguments.</p>
+                <p><strong>Creative Writing</strong> — Fiction, narrative, experimental styles.</p>
+
+                <h4>Slop removal</h4>
+                <p>The tool actively avoids common AI writing patterns: em dashes, antithetical constructions (it's not X, it's Y), short singleton phrases, unnecessary lists and tables, and formulaic transitions. Generated text flows naturally in paragraph form matching your authentic voice.</p>
+
+                <h4>API providers</h4>
+                <p><strong>Puter GPT-OSS</strong> is the default and is completely free with no API key required. Uses Puter's user-pays model.</p>
+                <p><strong>OpenRouter</strong> provides access to many models through a single API key. CORS-friendly.</p>
+                <p><strong>Anthropic</strong> connects directly to the Claude Messages API.</p>
+                <p><strong>OpenAI</strong> connects to the Chat Completions API.</p>
+                <p><strong>Google Gemini</strong> connects to the Gemini API.</p>
+                <p><strong>Ollama</strong> runs AI models locally on your machine. No API key needed.</p>
+                <p><strong>Custom Endpoint</strong> supports any OpenAI-compatible API.</p>
+
+                <h4>Using your profile</h4>
+                <p>Download your writing profile as JSON to reuse across sessions or share with others. The profile can be loaded into any LLM as a system prompt to maintain your writing style.</p>
+
+                <p>All processing happens through the selected API provider. No data is stored on any server.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="file-protocol-warning" class="warning-banner hidden">
+        <strong>Local file detected.</strong> The Puter API requires a web server.
+        Run this from your project folder:
+        <code>python3 -m http.server 8000</code> then open <a href="http://localhost:8000">http://localhost:8000</a>
+    </div>
+
+    <div class="container">
+        <!-- Settings Panel -->
+        <button id="settings-toggle" class="settings-toggle">&#9654; API Settings</button>
+        <div id="settings-panel" class="settings-panel hidden">
+            <div class="form-group">
+                <label for="api-mode">API Provider</label>
+                <select id="api-mode">
+                    <option value="puter">Puter GPT-OSS (Free, no key required)</option>
+                    <option value="openrouter">OpenRouter (CORS-friendly, many models)</option>
+                    <option value="anthropic">Anthropic Claude</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="google">Google Gemini</option>
+                    <option value="ollama">Ollama (Local)</option>
+                    <option value="custom">Custom Endpoint</option>
+                </select>
+            </div>
+
+            <!-- Puter Settings -->
+            <div id="puter-settings" class="provider-settings">
+                <div class="form-group">
+                    <label for="puter-model">Model</label>
+                    <select id="puter-model">
+                        <option value="openai/gpt-oss-120b">gpt-oss-120b (117B params, best quality)</option>
+                        <option value="openai/gpt-oss-120b:exacto">gpt-oss-120b:exacto (precise variant)</option>
+                        <option value="openai/gpt-oss-20b">gpt-oss-20b (21B params, faster)</option>
+                    </select>
+                </div>
+                <p class="settings-hint">Powered by Puter.com — free, no API key needed.</p>
+            </div>
+
+            <!-- Ollama Settings -->
+            <div id="ollama-settings" class="provider-settings hidden">
+                <div class="form-group">
+                    <label for="ollama-url">Ollama URL</label>
+                    <input type="text" id="ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434">
+                </div>
+                <div class="form-group">
+                    <label for="ollama-model">Model</label>
+                    <input type="text" id="ollama-model" placeholder="gpt-oss:20b" value="gpt-oss:20b">
+                </div>
+                <div class="ollama-hint-row">
+                    <p class="settings-hint">Runs locally on your machine — no API key, no data leaves your computer.</p>
+                    <button type="button" id="btn-ollama-help" class="btn-small">Setup Instructions</button>
+                </div>
+            </div>
+
+            <!-- Ollama Instructions Modal -->
+            <div id="ollama-modal" class="modal-overlay hidden">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3>Running Write Like Me with Ollama</h3>
+                        <button id="btn-close-ollama" class="btn-modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Ollama lets you run AI models locally on your own machine. No API key needed, no data leaves your computer, and it's completely free.</p>
+
+                        <p class="alert-box"><strong>Browser requirement:</strong> When using Ollama from GitHub Pages (or any HTTPS URL), <strong>Google Chrome is required</strong>. Safari and other WebKit browsers block HTTPS pages from connecting to local HTTP servers.</p>
+
+                        <div class="os-tabs">
+                            <button class="os-tab-btn active" data-os="mac">macOS</button>
+                            <button class="os-tab-btn" data-os="win">Windows</button>
+                            <button class="os-tab-btn" data-os="linux">Linux</button>
+                        </div>
+
+                        <!-- macOS -->
+                        <div class="os-panel active" data-os="mac">
+                            <h4>1. Install Ollama</h4>
+                            <pre class="terminal-block">curl -fsSL https://ollama.com/install.sh | sh</pre>
+
+                            <h4>2. Pull the default model</h4>
+                            <pre class="terminal-block">ollama pull gpt-oss:20b</pre>
+
+                            <h4>3. Start Ollama with remote access enabled</h4>
+                            <pre class="terminal-block">pkill ollama
+OLLAMA_ORIGINS=* ollama serve</pre>
+                            <p>To make this permanent, add to your <code>~/.zshrc</code>:</p>
+                            <pre class="terminal-block">export OLLAMA_ORIGINS=*</pre>
+                        </div>
+
+                        <!-- Windows -->
+                        <div class="os-panel" data-os="win">
+                            <h4>1. Install Ollama</h4>
+                            <p>Download the installer from <strong>ollama.com/download</strong> and run it.</p>
+
+                            <h4>2. Pull the default model</h4>
+                            <pre class="terminal-block">ollama pull gpt-oss:20b</pre>
+
+                            <h4>3. Start Ollama with remote access enabled</h4>
+                            <pre class="terminal-block">Stop-Process -Name ollama -Force
+$env:OLLAMA_ORIGINS="*"; ollama serve</pre>
+                            <p>To make permanent:</p>
+                            <pre class="terminal-block">[System.Environment]::SetEnvironmentVariable("OLLAMA_ORIGINS", "*", "User")</pre>
+                        </div>
+
+                        <!-- Linux -->
+                        <div class="os-panel" data-os="linux">
+                            <h4>1. Install Ollama</h4>
+                            <pre class="terminal-block">curl -fsSL https://ollama.com/install.sh | sh</pre>
+
+                            <h4>2. Pull the default model</h4>
+                            <pre class="terminal-block">ollama pull gpt-oss:20b</pre>
+
+                            <h4>3. Configure and restart</h4>
+                            <pre class="terminal-block">sudo systemctl edit ollama</pre>
+                            <p>Add under <code>[Service]</code>:</p>
+                            <pre class="terminal-block">[Service]
+Environment="OLLAMA_ORIGINS=*"</pre>
+                            <pre class="terminal-block">sudo systemctl restart ollama</pre>
+                        </div>
+
+                        <h4>4. Configure Write Like Me</h4>
+                        <ol>
+                            <li>Select <strong>Ollama (Local)</strong> as the API Provider</li>
+                            <li>URL defaults to <code>http://localhost:11434</code></li>
+                            <li>Model defaults to <strong>gpt-oss:20b</strong></li>
+                            <li>Analyze or generate — connection is verified before sending</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shared fields for key-based providers -->
+            <div id="keyed-settings" class="provider-settings hidden">
+                <div class="form-group">
+                    <label for="api-key">API Key</label>
+                    <input type="password" id="api-key" placeholder="sk-...">
+                </div>
+                <div id="base-url-group" class="form-group hidden">
+                    <label for="base-url">Base URL</label>
+                    <input type="text" id="base-url" placeholder="https://api.openai.com/v1">
+                </div>
+                <div class="form-group">
+                    <label for="model-name">Model</label>
+                    <input type="text" id="model-name" placeholder="gpt-4o">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="save-key">
+                    <label for="save-key">Remember settings in this browser</label>
+                </div>
+                <p id="provider-hint" class="settings-hint"></p>
+            </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- Step 1: Input Writing Samples -->
+        <div id="step-input" class="step active">
+            <!-- Saved Profile Banner (shown when profile exists in localStorage) -->
+            <div id="saved-profile-banner" class="saved-profile-banner hidden">
+                <span class="banner-text">You have a saved writing profile</span>
+                <div class="banner-actions">
+                    <button id="btn-use-saved-profile" class="btn-small">Use Saved Profile</button>
+                    <button id="btn-add-to-profile" class="btn-text">Add More Samples</button>
+                    <button id="btn-clear-profile" class="btn-text danger">Clear</button>
+                </div>
+            </div>
+
+            <h3>Step 1: Share Your Writing Samples</h3>
+            <p class="step-description">Provide samples of your writing to analyze. More samples lead to more accurate style detection.</p>
+            <div class="quality-tip">
+                <strong>Tip:</strong> Add 3-5 diverse samples totaling 2,000+ words for an <span class="quality-excellent">Excellent</span> profile. 
+                Even 1-2 samples will work, but more variety means better results.
+            </div>
+
+            <div class="input-tabs">
+                <button class="input-tab-btn active" data-tab="paste">Paste Text</button>
+                <button class="input-tab-btn" data-tab="url">From URL</button>
+                <button class="input-tab-btn" data-tab="upload">Upload Files</button>
+                <button class="input-tab-btn" data-tab="load">Load Profile</button>
+            </div>
+
+            <!-- Paste Tab -->
+            <div class="input-panel active" data-tab="paste">
+                <div class="form-group">
+                    <label for="paste-input">Paste Your Writing</label>
+                    <textarea id="paste-input" placeholder="Paste your writing samples here. You can include multiple samples — just separate them with blank lines. The more samples you provide, the more accurate your writing profile will be." rows="10"></textarea>
+                    <div class="char-counter"><span id="paste-char-count">0</span> characters</div>
+                </div>
+                <button id="btn-add-paste" class="btn-secondary">Add Sample</button>
+            </div>
+
+            <!-- URL Tab -->
+            <div class="input-panel" data-tab="url">
+                <div class="form-group">
+                    <label for="url-input">Enter URLs (one per line)</label>
+                    <textarea id="url-input" placeholder="Paste one or more URLs, one per line:
+https://example.com/your-blog-post
+https://example.com/another-post" rows="6"></textarea>
+                </div>
+                <button id="btn-fetch-url" class="btn-secondary">Fetch Content</button>
+                <div id="url-fetch-progress" class="url-fetch-progress hidden">
+                    <div class="progress-bar"><div class="progress-fill" id="url-progress-fill"></div></div>
+                    <div id="url-progress-text" class="progress-text">0 / 0</div>
+                </div>
+                <div id="url-status" class="url-status hidden"></div>
+            </div>
+
+            <!-- Upload Tab -->
+            <div class="input-panel" data-tab="upload">
+                <div id="drop-area" class="drop-area">
+                    <p>Drag & drop text files here or click to select</p>
+                    <p class="drop-hint">Supports .txt, .md files — upload multiple at once</p>
+                    <input type="file" id="file-input" accept=".txt,.md,.text" multiple class="hidden">
+                </div>
+            </div>
+
+            <!-- Load Profile Tab -->
+            <div class="input-panel" data-tab="load">
+                <div class="form-group">
+                    <label for="profile-input">Paste Writing Profile JSON</label>
+                    <textarea id="profile-input" placeholder="Paste a previously saved writing profile JSON here to skip analysis and go directly to text generation." rows="6"></textarea>
+                </div>
+                <button id="btn-load-profile" class="btn-secondary">Load Profile</button>
+            </div>
+
+            <!-- Sample List -->
+            <div id="samples-section" class="samples-section hidden">
+                <h4>Your Samples <span id="sample-count">(0)</span></h4>
+                <div id="samples-list" class="samples-list"></div>
+                <div class="sample-stats">
+                    <span id="total-words">0 words</span>
+                    <span id="total-chars">0 characters</span>
+                </div>
+            </div>
+
+            <button id="btn-analyze" class="btn-primary" disabled>Analyze Writing Style</button>
+        </div>
+
+        <!-- Step 2: Writing Profile -->
+        <div id="step-profile" class="step">
+            <h3>Step 2: Your Writing Profile</h3>
+
+            <div id="profile-loading" class="loading-container hidden">
+                <div class="spinner"></div>
+                <div class="loading-text">Analyzing your writing style...</div>
+                <div class="loading-status">Examining tone, vocabulary, sentence structure, and stylistic patterns</div>
+            </div>
+
+            <div id="profile-content" class="profile-content hidden">
+                <!-- Profile Quality Metric -->
+                <div id="profile-quality" class="profile-quality">
+                    <div class="quality-header">
+                        <span class="quality-label">Profile Quality</span>
+                        <span id="quality-score" class="quality-score">—</span>
+                    </div>
+                    <div class="quality-bar">
+                        <div id="quality-fill" class="quality-fill"></div>
+                    </div>
+                    <p id="quality-suggestion" class="quality-suggestion"></p>
+                </div>
+
+                <div class="profile-header">
+                    <div class="profile-score">
+                        <span class="profile-label">Writing Complexity</span>
+                        <span id="complexity-score" class="complexity-score">—</span>
+                    </div>
+                    <div class="profile-meta">
+                        <span id="reading-level" class="reading-level">—</span>
+                        <span id="sample-summary" class="sample-summary">—</span>
+                    </div>
+                </div>
+
+                <div class="profile-grid">
+                    <div class="profile-card">
+                        <h4>Style</h4>
+                        <div id="style-analysis"></div>
+                    </div>
+                    <div class="profile-card">
+                        <h4>Tone & Voice</h4>
+                        <div id="tone-analysis"></div>
+                    </div>
+                    <div class="profile-card">
+                        <h4>Vocabulary</h4>
+                        <div id="vocab-analysis"></div>
+                    </div>
+                    <div class="profile-card">
+                        <h4>Structure</h4>
+                        <div id="structure-analysis"></div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h4>Stylistic Markers</h4>
+                    <div id="markers-analysis"></div>
+                </div>
+
+                <div class="profile-section">
+                    <h4>Patterns to Replicate</h4>
+                    <div id="patterns-analysis"></div>
+                </div>
+
+                <div class="profile-actions">
+                    <button id="btn-download-profile" class="btn-small">Download Profile JSON</button>
+                    <button id="btn-copy-profile" class="btn-small">Copy Profile</button>
+                    <button id="btn-save-storage" class="btn-small btn-primary-small" title="Save your profile to this browser so it loads automatically next time">
+                        Save to Browser
+                    </button>
+                </div>
+            </div>
+
+            <div class="step-nav">
+                <button id="btn-back-input" class="btn-secondary">Back</button>
+                <button id="btn-to-generate" class="btn-primary" disabled>Generate Content</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Generate Content -->
+        <div id="step-generate" class="step">
+            <h3>Step 3: Generate Content in Your Style</h3>
+            
+            <div class="profile-preview-bar">
+                <span>Writing as: <strong id="profile-name-preview">Your Style</strong></span>
+                <div class="profile-preview-actions">
+                    <button id="btn-quick-profile" class="btn-small btn-ghost">Quick View</button>
+                    <button id="btn-full-profile" class="btn-small btn-ghost">Full Profile</button>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="content-type">Content Type</label>
+                    <select id="content-type">
+                        <option value="social-personal">Social Media (Personal)</option>
+                        <option value="social-professional">Social Media (Professional)</option>
+                        <option value="blog-personal">Blog (Personal)</option>
+                        <option value="blog-professional">Blog (Professional)</option>
+                        <option value="long-form">Long-form Writing</option>
+                        <option value="creative">Creative Writing</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="prompt-input">What should I write about?</label>
+                <textarea id="prompt-input" placeholder="Example: Write a social media post about my new blog article: https://example.com/article
+
+Or: Write a paragraph introducing my thoughts on remote work culture
+
+Be specific about what you want — the tool will handle styling it in your voice." rows="4"></textarea>
+            </div>
+
+            <!-- URL Artifacts Section -->
+            <div id="url-artifacts" class="url-artifacts hidden">
+                <h5>URLs to Fetch</h5>
+                <div id="url-artifacts-list" class="url-artifacts-list"></div>
+            </div>
+
+            <!-- Platform Detection Section -->
+            <div id="platform-artifacts" class="platform-artifacts hidden">
+                <h5>Detected Platform</h5>
+                <div id="platform-info" class="platform-info"></div>
+            </div>
+
+            <button id="btn-generate" class="btn-primary">Generate Text</button>
+
+            <div id="generate-loading" class="loading-container hidden">
+                <div class="spinner"></div>
+                <div class="loading-text">Generating content in your style...</div>
+                <div class="loading-status">Applying your writing profile and removing AI patterns</div>
+            </div>
+
+            <!-- Output Section -->
+            <div id="output-section" class="output-section hidden">
+                <h4>Generated Content</h4>
+                <div id="generated-content" class="generated-content"></div>
+                <div class="btn-row">
+                    <button id="btn-copy-output" class="btn-small">Copy</button>
+                    <button id="btn-regenerate" class="btn-small">Regenerate</button>
+                </div>
+
+                <div class="slop-check hidden" id="slop-check">
+                    <h5>Slop Check</h5>
+                    <div id="slop-issues"></div>
+                </div>
+            </div>
+
+            <div class="step-nav">
+                <button id="btn-back-profile" class="btn-secondary">Back to Profile</button>
+            </div>
+        </div>
+
+        <!-- Save Profile Prompt Modal -->
+        <div id="save-profile-modal" class="modal-overlay hidden">
+            <div class="modal modal-small">
+                <div class="modal-header">
+                    <h3>Save Writing Profile?</h3>
+                    <button id="btn-close-save-profile" class="btn-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Would you like to save your writing profile to this browser? Next time you visit, you'll skip straight to generating content.</p>
+                    <p style="font-size: 13px; color: #666; margin-top: 12px;">You can always add more samples or update your profile later.</p>
+                    <div class="modal-actions">
+                        <button id="btn-save-profile-yes" class="btn-primary">Yes, Save Profile</button>
+                        <button id="btn-save-profile-no" class="btn-secondary">No, Just This Session</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Profile View Modal -->
+        <div id="quick-profile-modal" class="modal-overlay hidden">
+            <div class="modal modal-medium">
+                <div class="modal-header">
+                    <h3>Your Writing Profile</h3>
+                    <button id="btn-close-quick-profile" class="btn-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="quick-profile-content"></div>
+                    <div class="modal-actions">
+                        <button id="btn-view-full-profile" class="btn-secondary">View Full Profile</button>
+                        <button id="btn-edit-profile" class="btn-secondary">Add More Samples</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Profile Modal -->
+        <div id="full-profile-modal" class="modal-overlay hidden">
+            <div class="modal modal-large">
+                <div class="modal-header">
+                    <h3>Full Writing Profile</h3>
+                    <button id="btn-close-full-profile" class="btn-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="full-profile-content" class="profile-results-content"></div>
+                    <div class="modal-actions">
+                        <button id="btn-copy-profile-modal" class="btn-secondary">Copy Profile JSON</button>
+                        <button id="btn-close-full-profile-ok" class="btn-primary">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Style Override Modal -->
+        <div id="professional-style-modal" class="modal-overlay hidden">
+            <div class="modal modal-medium">
+                <div class="modal-header">
+                    <h3>Professional Platform Detected</h3>
+                    <button id="btn-close-prof-style" class="btn-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p id="prof-style-platform-text">You're writing for <strong>LinkedIn</strong>, a professional platform.</p>
+                    <p>Your writing profile shows a casual style. Would you like to adjust for professional standards?</p>
+                    <div class="prof-style-options">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="prof-fix-capitalization" checked>
+                            <span>Fix capitalization (proper case for sentences, names)</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="prof-fix-grammar" checked>
+                            <span>Ensure standard grammar and punctuation</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="prof-formal-tone">
+                            <span>Use more formal vocabulary</span>
+                        </label>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="btn-prof-style-skip" class="btn-secondary">Keep My Style</button>
+                        <button id="btn-prof-style-apply" class="btn-primary">Apply Adjustments</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Saved Confirmation Modal -->
+        <div id="storage-saved-modal" class="modal-overlay hidden">
+            <div class="modal modal-small">
+                <div class="modal-header">
+                    <h3>Profile Saved</h3>
+                    <button id="btn-close-storage-saved" class="btn-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Your writing profile has been saved to this browser's local storage.</p>
+                    <div class="storage-info">
+                        <h5>What this means:</h5>
+                        <ul>
+                            <li>Next time you visit, your profile loads automatically</li>
+                            <li>You'll skip straight to generating content</li>
+                            <li>Your data stays on this device only</li>
+                            <li>Clearing browser data will remove the profile</li>
+                        </ul>
+                    </div>
+                    <p style="font-size: 13px; color: #666; margin-top: 12px;">You can update or clear your profile from the input screen.</p>
+                    <div class="modal-actions">
+                        <button id="btn-close-storage-ok" class="btn-primary">Got it</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error -->
+        <div id="error-section" class="error-message hidden"></div>
+    </div>
+
+    <!-- Puter Fallback Modal -->
+    <div id="puter-fallback-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Puter isn't available — run locally with Ollama</h3>
+                <button id="btn-close-fallback" class="btn-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="puter-fallback-reason"></p>
+                <p>You can run GPT-OSS locally for free using <strong>Ollama</strong>. No API key, no usage limits, no data leaves your computer.</p>
+
+                <p class="alert-box"><strong>Browser requirement:</strong> When using Ollama from GitHub Pages (or any HTTPS URL), <strong>Google Chrome is required</strong>.</p>
+
+                <div class="os-tabs">
+                    <button class="os-tab-btn active" data-os="mac">macOS</button>
+                    <button class="os-tab-btn" data-os="win">Windows</button>
+                    <button class="os-tab-btn" data-os="linux">Linux</button>
+                </div>
+
+                <!-- macOS -->
+                <div class="os-panel active" data-os="mac">
+                    <p><strong>1.</strong> Install Ollama:</p>
+                    <pre class="terminal-block">curl -fsSL https://ollama.com/install.sh | sh</pre>
+                    <p><strong>2.</strong> Pull GPT-OSS and start with browser access:</p>
+                    <pre class="terminal-block">ollama pull gpt-oss:20b
+pkill ollama
+OLLAMA_ORIGINS=* ollama serve</pre>
+                </div>
+
+                <!-- Windows -->
+                <div class="os-panel" data-os="win">
+                    <p><strong>1.</strong> Download from <strong>ollama.com/download</strong> and install.</p>
+                    <p><strong>2.</strong> In PowerShell:</p>
+                    <pre class="terminal-block">ollama pull gpt-oss:20b
+Stop-Process -Name ollama -Force
+$env:OLLAMA_ORIGINS="*"; ollama serve</pre>
+                </div>
+
+                <!-- Linux -->
+                <div class="os-panel" data-os="linux">
+                    <p><strong>1.</strong> Install and configure:</p>
+                    <pre class="terminal-block">curl -fsSL https://ollama.com/install.sh | sh
+ollama pull gpt-oss:20b
+sudo systemctl edit ollama
+# Add: Environment="OLLAMA_ORIGINS=*"
+sudo systemctl restart ollama</pre>
+                </div>
+
+                <p><strong>3.</strong> Click below to switch Write Like Me to Ollama:</p>
+                <button id="btn-switch-ollama" class="btn-primary" style="margin-top: 8px;">Switch to Ollama now</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="license-section">
+        <div class="footer-links">
+            <div class="license-badge">
+                MIT License
+                <div class="license-tooltip">
+                    MIT License<br><br>
+                    Copyright (c) 2026 Austin Harshberger<br><br>
+                    Permission is hereby granted, free of charge, to any person obtaining a copy
+                    of this software and associated documentation files (the "Software"), to deal
+                    in the Software without restriction, including without limitation the rights
+                    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                    copies of the Software, and to permit persons to whom the Software is
+                    furnished to do so, subject to the following conditions:<br><br>
+                    The above copyright notice and this permission notice shall be included in all
+                    copies or substantial portions of the Software.
+                </div>
+            </div>
+            <a href="https://attest.ink/verify/?data=eyJ2ZXJzaW9uIjoiMi4wIiwiaWQiOiIyMDI2LTAyLTIzLXdyaXRlbGlrZW1lIiwiY29udGVudF9uYW1lIjoiV3JpdGUgTGlrZSBNZSIsInRpbWVzdGFtcCI6IjIwMjYtMDItMjNUMDA6MDA6MDAuMDAwWiIsInBsYXRmb3JtIjoiYXR0ZXN0LmluayIsIm1vZGVsIjoiY2xhdWRlLW9wdXMtNC02Iiwicm9sZSI6ImdlbmVyYXRlZCIsImRvY3VtZW50X3R5cGUiOiJjb2RlIiwiYXV0aG9yIjoiOTcgMTE1IDEwNCJ9" class="attest-badge" target="_blank" rel="noopener noreferrer">
+                built with ai
+            </a>
+        </div>
+        <div class="author-info">
+            <a href="https://github.com/sponsors/97115104" target="_blank" rel="noopener noreferrer">Created by 97 115 104 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" style="display:inline;margin-left:4px;vertical-align:-2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></a>
+            <div style="margin-top: 12px; font-size: 13px; line-height: 1.6;">
+                <a href="https://github.com/97115104/writelikeme" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">View the source code on GitHub</a>
+                <br />
+                <a href="https://97115104.com/projects/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">Other projects</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="./js/apiClient.js"></script>
+    <script src="./js/writingAnalyzer.js"></script>
+    <script src="./js/uiRenderer.js"></script>
+    <script src="./js/app.js"></script>
+</body>
+</html>

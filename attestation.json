@@ -1,0 +1,18 @@
+{
+  "version": "2.0",
+  "id": "2026-02-23-writelikeme",
+  "content_name": "Write Like Me",
+  "timestamp": "2026-02-23T00:00:00.000Z",
+  "platform": "attest.ink",
+  "model": "claude-opus-4-6",
+  "role": "generated",
+  "document_type": "code",
+  "author": "97 115 104",
+  "description": "A serverless tool that analyzes writing samples to create a writing profile and generates content in the writer's unique style, avoiding common AI writing patterns.",
+  "repository": "https://github.com/97115104/writelikeme",
+  "license": "MIT",
+  "signer": {
+    "name": "97 115 104",
+    "id": "97115104"
+  }
+}
