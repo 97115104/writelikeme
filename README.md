@@ -8,9 +8,13 @@ A free, serverless tool that analyzes your writing samples and generates new con
 
 Add your writing samples by pasting text, entering URLs, or uploading files (.txt, .md, .rtf, .pdf, or Scrivener .scriv folders). Click Analyze to extract your voice patterns, tone, vocabulary, and style markers. Then write prompts and generate content that sounds like you. Save your profile to the browser or download it as JSON for later use.
 
+## Famous Author Matching
+
+Your profile is compared against 28 famous authors to find your stylistic twins. The matching algorithm weighs formality, tone, vocabulary complexity, sentence length, directness, and emotional register. Results show which authors you write like and the specific traits you share. Hover over any trait to see what it means. The author database includes classic and contemporary writers across Fantasy, Literary Fiction, Mystery, and Horror, featuring voices from Tolkien and Hemingway to Atwood and Gaiman, plus notable LGBT authors like Oscar Wilde, James Baldwin, Truman Capote, Patricia Highsmith, Audre Lorde, and Sarah Waters.
+
 ## AI Pattern Detection
 
-Write Like Me detects and removes patterns that make AI writing sound artificial. Critical issues like antithetical constructions, bullet lists, and third-person self-references are fixed automatically. High-priority patterns include formulaic transitions (However, Moreover), colon declarations, and meta-commentary. Medium-priority issues cover AI vocabulary clusters (landscape, ecosystem, journey), passive voice, and engagement bait. Formatting problems like long paragraphs, excessive whitespace, and run-on sentences are also corrected.
+Write Like Me detects and removes patterns that make AI writing sound artificial. Critical issues like antithetical constructions, bullet lists, and third-person self-references are fixed automatically. High-priority patterns include formulaic transitions (However, Moreover), colon declarations, and meta-commentary. Medium-priority issues cover AI vocabulary clusters (landscape, ecosystem, journey), passive voice, and engagement bait. Formatting problems like long paragraphs, excessive whitespace, and run-on sentences are also corrected. The detector catches split-sentence antithetical patterns, flowery metaphors like "glide past," and AI combos like "raw, unfiltered."
 
 Generated text receives a quality score from 0 to 100 showing how authentic it sounds.
 
@@ -61,7 +65,7 @@ OLLAMA_ORIGINS=* ollama serve
 
 ## Technical Details
 
-Write Like Me is pure HTML, CSS, and JavaScript with no build step required. It runs serverless for easy GitHub Pages deployment. The multi-provider API abstraction supports seven different AI providers. Profile persistence uses localStorage. See [docs/ai-writing-patterns-research.md](docs/ai-writing-patterns-research.md) for the research behind slop detection.
+Write Like Me is pure HTML, CSS, and JavaScript with no build step required. It runs serverless for easy GitHub Pages deployment. The multi-provider API abstraction supports seven different AI providers. Profile persistence uses localStorage. The author database lives in [data/authors.json](data/authors.json) for easy updates. See [docs/ai-writing-patterns-research.md](docs/ai-writing-patterns-research.md) for the research behind slop detection.
 
 ## Privacy
 
