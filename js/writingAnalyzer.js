@@ -1,4 +1,243 @@
 const WritingAnalyzer = (() => {
+    // Content Types Configuration - JSON structure for easy querying and updating
+    const CONTENT_TYPES = {
+        categories: {
+            'social': {
+                label: 'Social Media',
+                hasTones: true,
+                defaultTone: 'personal',
+                icon: '📱',
+                tones: {
+                    'personal': {
+                        label: 'Personal',
+                        description: 'X, Instagram, TikTok - casual, engaging',
+                        instruction: 'Generate content for personal social media (X, Instagram, TikTok). Keep it casual, engaging, authentic. Aim for 1-3 short paragraphs maximum.',
+                        formatting: {
+                            maxParagraphs: 3,
+                            useLineBreaks: true,
+                            allowEmoji: true,
+                            signature: false
+                        }
+                    },
+                    'professional': {
+                        label: 'Professional',
+                        description: 'LinkedIn - polished but authentic',
+                        instruction: 'Generate content for professional social media (LinkedIn). Maintain professionalism while keeping authenticity. Typically 2-4 paragraphs.',
+                        formatting: {
+                            maxParagraphs: 4,
+                            useLineBreaks: true,
+                            allowEmoji: false,
+                            signature: false
+                        }
+                    }
+                }
+            },
+            'blog': {
+                label: 'Blog Post',
+                hasTones: true,
+                defaultTone: 'personal',
+                icon: '✍️',
+                tones: {
+                    'personal': {
+                        label: 'Personal',
+                        description: 'Conversational, story-driven',
+                        instruction: 'Generate content for a personal blog. Conversational, story-driven, allows for personal anecdotes and reflections. Can be multiple paragraphs.',
+                        formatting: {
+                            useLineBreaks: true,
+                            allowHeadings: false,
+                            signature: false
+                        }
+                    },
+                    'professional': {
+                        label: 'Professional',
+                        description: 'Informative, authoritative',
+                        instruction: 'Generate content for a professional blog. Informative, expertise-focused, authoritative but accessible. Multiple well-structured paragraphs.',
+                        formatting: {
+                            useLineBreaks: true,
+                            allowHeadings: true,
+                            signature: false
+                        }
+                    }
+                }
+            },
+            'email': {
+                label: 'Email',
+                hasTones: true,
+                defaultTone: 'professional',
+                icon: '📧',
+                tones: {
+                    'personal': {
+                        label: 'Personal',
+                        description: 'Warm, conversational',
+                        instruction: 'Generate a personal email. Warm, direct, conversational. Get to the point but maintain connection. Match the relationship context (friend, family, acquaintance).',
+                        formatting: {
+                            greeting: true,
+                            signoff: true,
+                            useLineBreaks: true,
+                            template: 'personal-email'
+                        }
+                    },
+                    'professional': {
+                        label: 'Professional',
+                        description: 'Clear, action-oriented',
+                        instruction: 'Generate a professional email. Clear, concise, action-oriented. Start with purpose, provide context briefly, end with clear next steps. Maintain warmth without being overly casual. Include a professional greeting (Dear/Hi [Name]) and sign-off (Best regards, etc.).',
+                        formatting: {
+                            greeting: true,
+                            signoff: true,
+                            useLineBreaks: true,
+                            template: 'professional-email'
+                        }
+                    }
+                }
+            },
+            'long-form': {
+                label: 'Long-form Article',
+                hasTones: false,
+                icon: '📄',
+                instruction: 'Generate long-form content such as articles or essays. Sustained arguments, detailed exploration, multiple sections if needed.',
+                formatting: {
+                    useLineBreaks: true,
+                    allowHeadings: true,
+                    minParagraphs: 4
+                }
+            },
+            'creative': {
+                label: 'Creative Writing',
+                hasTones: false,
+                icon: '🎭',
+                instruction: 'Generate creative writing. Narrative focus, experimental where appropriate to the style, emphasis on voice and rhythm.',
+                formatting: {
+                    useLineBreaks: true,
+                    allowDialogue: true
+                }
+            },
+            'readme': {
+                label: 'README / Docs',
+                hasTones: false,
+                icon: '📋',
+                instruction: 'Generate README or technical documentation. Clear, concise, well-structured. Use headings, brief explanations, and practical examples. Focus on clarity over personality. Write for developers who will scan quickly.',
+                formatting: {
+                    useMarkdown: true,
+                    allowHeadings: true,
+                    allowCodeBlocks: true,
+                    allowLists: true // Exception: lists OK for docs
+                }
+            },
+            'marketing': {
+                label: 'Marketing Copy',
+                hasTones: false,
+                icon: '📣',
+                instruction: 'Generate marketing copy. Persuasive, benefit-focused, clear value proposition. Punchy and compelling. Connect emotionally while being specific. No fluff or corporate jargon.',
+                formatting: {
+                    useLineBreaks: true,
+                    punchyParagraphs: true
+                }
+            },
+            'chat': {
+                label: 'Text / Chat',
+                hasTones: false,
+                icon: '💬',
+                instruction: 'Generate text message or chat content. Ultra-brief, conversational, casual. Use natural speech patterns. No formality. Can use sentence fragments. Keep it real.',
+                formatting: {
+                    ultraBrief: true,
+                    allowFragments: true,
+                    allowEmoji: true,
+                    noGreeting: true
+                }
+            },
+            'bio': {
+                label: 'Bio / About Me',
+                hasTones: true,
+                defaultTone: 'personal',
+                icon: '👤',
+                tones: {
+                    'personal': {
+                        label: 'Personal',
+                        description: 'Social media bio, casual intro',
+                        instruction: 'Generate a personal bio or About Me section. Concise personal introduction. Highlight personality and interests. Balance confidence with authenticity. Usually 2-4 sentences.',
+                        formatting: {
+                            maxSentences: 4,
+                            ultraBrief: true
+                        }
+                    },
+                    'professional': {
+                        label: 'Professional',
+                        description: 'LinkedIn, company profile',
+                        instruction: 'Generate a professional bio. Concise introduction highlighting expertise and achievements. Third person optional. Balance confidence with authenticity. 2-4 sentences for bios, 1-2 paragraphs for About sections.',
+                        formatting: {
+                            maxParagraphs: 2
+                        }
+                    }
+                }
+            },
+            'cover-letter': {
+                label: 'Cover Letter',
+                hasTones: false,
+                icon: '📝',
+                instruction: 'Generate a cover letter. Professional but personable. Connect experience to requirements. Show enthusiasm without being sycophantic. Concrete examples over generic claims. 3-4 paragraphs max. Include proper greeting and professional sign-off.',
+                formatting: {
+                    greeting: true,
+                    signoff: true,
+                    useLineBreaks: true,
+                    maxParagraphs: 4,
+                    template: 'cover-letter'
+                }
+            }
+        },
+
+        // Get instruction for a content type key (e.g., 'email-professional' or 'creative')
+        getInstruction(typeKey) {
+            const [category, tone] = typeKey.includes('-') ? typeKey.split('-') : [typeKey, null];
+            const cat = this.categories[category];
+            if (!cat) return this.categories['blog'].tones.personal.instruction;
+            
+            if (cat.hasTones && tone && cat.tones[tone]) {
+                return cat.tones[tone].instruction;
+            } else if (cat.hasTones) {
+                return cat.tones[cat.defaultTone].instruction;
+            }
+            return cat.instruction;
+        },
+
+        // Get formatting config for a content type key
+        getFormatting(typeKey) {
+            const [category, tone] = typeKey.includes('-') ? typeKey.split('-') : [typeKey, null];
+            const cat = this.categories[category];
+            if (!cat) return {};
+            
+            if (cat.hasTones && tone && cat.tones[tone]) {
+                return cat.tones[tone].formatting || {};
+            } else if (cat.hasTones) {
+                return cat.tones[cat.defaultTone].formatting || {};
+            }
+            return cat.formatting || {};
+        },
+
+        // Get all categories for dropdown
+        getAllCategories() {
+            return Object.entries(this.categories).map(([key, cat]) => ({
+                key,
+                label: cat.label,
+                icon: cat.icon,
+                hasTones: cat.hasTones
+            }));
+        },
+
+        // Get tones for a category
+        getTones(categoryKey) {
+            const cat = this.categories[categoryKey];
+            if (!cat || !cat.hasTones) return null;
+            return Object.entries(cat.tones).map(([key, tone]) => ({
+                key,
+                label: tone.label,
+                description: tone.description
+            }));
+        }
+    };
+
+    // Expose CONTENT_TYPES for other modules
+    window.CONTENT_TYPES = CONTENT_TYPES;
+
     // System prompt for analyzing writing samples
     const ANALYSIS_SYSTEM_PROMPT = `You are an expert writing analyst specializing in stylistic analysis and voice profiling. Your task is to analyze writing samples and create a comprehensive writing profile.
 
@@ -83,14 +322,26 @@ Return your analysis as valid JSON with this exact structure:
 
     // System prompt for generating content in the writer's style
     function getGenerationSystemPrompt(profile, contentType) {
-        const contentTypeInstructions = {
-            'social-personal': 'Generate content for personal social media (X, Instagram, Twitter). Keep it casual, engaging, authentic. Aim for 1-3 short paragraphs maximum.',
-            'social-professional': 'Generate content for professional social media (LinkedIn). Maintain professionalism while keeping authenticity. Typically 2-4 paragraphs.',
-            'blog-personal': 'Generate content for a personal blog. Conversational, story-driven, allows for personal anecdotes and reflections. Can be multiple paragraphs.',
-            'blog-professional': 'Generate content for a professional blog. Informative, expertise-focused, authoritative but accessible. Multiple well-structured paragraphs.',
-            'long-form': 'Generate long-form content such as articles or essays. Sustained arguments, detailed exploration, multiple sections if needed.',
-            'creative': 'Generate creative writing. Narrative focus, experimental where appropriate to the style, emphasis on voice and rhythm.'
-        };
+        const instruction = CONTENT_TYPES.getInstruction(contentType);
+        const formatting = CONTENT_TYPES.getFormatting(contentType);
+        
+        // Build formatting hints based on content type
+        let formattingHints = '';
+        if (formatting.greeting && formatting.signoff) {
+            formattingHints += '\n- Include appropriate greeting and sign-off';
+        }
+        if (formatting.template === 'professional-email') {
+            formattingHints += '\n- Format: Greeting line, blank line, body paragraphs, blank line, sign-off';
+        }
+        if (formatting.template === 'cover-letter') {
+            formattingHints += '\n- Format: Professional greeting, introduction paragraph, 1-2 body paragraphs showing fit, closing paragraph with call to action, professional sign-off';
+        }
+        if (formatting.ultraBrief) {
+            formattingHints += '\n- Keep extremely brief and punchy';
+        }
+        if (formatting.useMarkdown) {
+            formattingHints += '\n- Use markdown formatting where appropriate';
+        }
 
         return `You are a writing ghost-writer. Your task is to generate content that perfectly matches a specific writer's voice and style.
 
@@ -130,7 +381,7 @@ ${JSON.stringify(profile, null, 2)}
 
 ## CONTENT TYPE
 
-${contentTypeInstructions[contentType] || contentTypeInstructions['blog-personal']}
+${instruction}${formattingHints}
 
 ## YOUR TASK
 
@@ -147,52 +398,125 @@ Write content that:
 Return ONLY the generated content. No explanations, no meta-commentary, no "Here's the content:" prefix. Just the actual content.`;
     }
 
-    // Slop detection patterns - comprehensive list based on real AI writing issues
+    // Slop detection patterns - comprehensive list based on AI writing research
+    // See docs/ai-writing-patterns-research.md for full documentation
     const SLOP_PATTERNS = [
-        // High severity - must be fixed
-        { name: 'Em dashes', pattern: /—/g, severity: 'high' },
-        { name: 'En dashes used as em dashes', pattern: /\s–\s/g, severity: 'high' },
-        { name: 'Hyphen dashes', pattern: /\s-\s(?=[A-Z])/g, severity: 'high' }, // " - Something"
+        // ============================================
+        // CRITICAL SEVERITY - Must always be fixed
+        // ============================================
         
-        // Antithetical constructions - very common AI pattern
-        { name: 'Antithetical (not X but Y)', pattern: /\b(is|are|was|were|isn't|aren't|wasn't|weren't) not ([\w\s]+?) but (the |a |an )?[\w]/gi, severity: 'high' },
-        { name: 'Antithetical (it\'s not about)', pattern: /\b(it'?s|this is|that'?s) not (about |just |only )?[\w\s]+,\s*(it'?s|this is|that'?s)/gi, severity: 'high' },
-        { name: 'Antithetical (not just X)', pattern: /\bnot just\b[^.]*\bbut (also )?\b/gi, severity: 'medium' },
+        // Punctuation patterns
+        { name: 'Em dashes', pattern: /—/g, severity: 'critical', category: 'punctuation' },
+        { name: 'En dashes as em dashes', pattern: /\s–\s/g, severity: 'critical', category: 'punctuation' },
+        { name: 'Hyphen dashes', pattern: /\s-\s(?=[A-Z])/g, severity: 'critical', category: 'punctuation' },
         
-        // Third person self-reference (should be "my" not "the")
-        { name: 'Third person self-reference', pattern: /\b(The|This|That) (post|article|blog|essay|piece|write-up) (walks|goes|takes|dives|delves|looks|explores|examines|discusses|covers|explains)/gi, severity: 'high' },
+        // Antithetical constructions - hallmark of AI writing
+        { name: 'Antithetical: not X but Y', pattern: /\b(is|are|was|were|isn't|aren't|wasn't|weren't) not ([\w\s]{2,30}?) but (the |a |an )?[\w]/gi, severity: 'critical', category: 'structure' },
+        { name: 'Antithetical: it\'s not about', pattern: /\b(it'?s|this is|that'?s) not (about |just |only |merely )?[\w\s]{2,40}[,;]\s*(it'?s|this is|that'?s)/gi, severity: 'critical', category: 'structure' },
+        { name: 'Antithetical: less X more Y', pattern: /\b(less|more) (about |of |like )[\w\s]{2,30}(and )?(less|more) (about |of |like )/gi, severity: 'critical', category: 'structure' },
+        { name: 'Antithetical: not just X', pattern: /\bnot just\b[^.]{2,50}\bbut (also )?\b/gi, severity: 'high', category: 'structure' },
+        
+        // Sycophantic phrases - immediate AI tells
+        { name: 'Sycophancy: great question', pattern: /\b(great|excellent|fantastic|wonderful|amazing|good) (question|point|observation|thought|idea)[.!]?/gi, severity: 'critical', category: 'tone' },
+        { name: 'Sycophancy: I\'d love', pattern: /\bI'?d love (your|to hear|to know|to see|to get|to learn)/gi, severity: 'critical', category: 'tone' },
+        { name: 'Sycophancy: that\'s fascinating', pattern: /\bthat'?s (a )?(fascinating|interesting|great|excellent|wonderful|intriguing)/gi, severity: 'critical', category: 'tone' },
+        { name: 'Sycophancy: appreciate you', pattern: /\b(I )?(really |truly )?appreciate (you|your|the)/gi, severity: 'high', category: 'tone' },
+        
+        // Lists and formatting - should be prose
+        { name: 'Bullet points', pattern: /^[\s]*[-•*]\s.+$/gm, severity: 'critical', category: 'structure' },
+        { name: 'Numbered lists', pattern: /^\s*\d+[.)]\s.+$/gm, severity: 'critical', category: 'structure' },
+        { name: 'Thread numbering', pattern: /^\s*\d+\/\d*\s/gm, severity: 'critical', category: 'structure' },
+        
+        // Third person self-reference
+        { name: 'Third person self-ref', pattern: /\b(The|This|That) (post|article|blog|essay|piece|write-up|thread|content) (walks|goes|takes|dives|delves|looks|explores|examines|discusses|covers|explains|breaks|outlines|presents)/gi, severity: 'critical', category: 'voice' },
+        
+        // ============================================
+        // HIGH SEVERITY - Should almost always be fixed
+        // ============================================
+        
+        // Lazy declarative openers
+        { name: 'Opener: here\'s the thing', pattern: /^(here'?s (the thing|what|the deal|my take)|the (bottom line|reality|truth) is|let me (be clear|explain|break))[.:,]/gim, severity: 'high', category: 'opener' },
+        { name: 'Opener: picture this', pattern: /^(picture this|imagine (this|a|if)|what if I told you|have you ever)[.:,]?/gim, severity: 'high', category: 'opener' },
+        { name: 'Opener: let\'s dive', pattern: /\blet'?s (dive|dig|jump|get) (in|into|started|going)\b/gi, severity: 'high', category: 'opener' },
+        { name: 'Opener: in this post', pattern: /^(in this (post|article|thread|piece)|today (I|we|I'm|we're)|I'm going to (show|explain|walk|break))/gim, severity: 'high', category: 'opener' },
+        
+        // Colon-based lazy declarations
+        { name: 'Colon declaration', pattern: /\b(the (bottom line|reality|truth|point|takeaway|lesson|key|answer|solution|problem|question)|here'?s (the thing|what|the deal|my take))\s*:/gi, severity: 'high', category: 'structure' },
+        { name: 'X is simple colon', pattern: /\b(the |my |our )?(\w+ )?(rule|approach|answer|solution|method|formula|secret|trick|key) (is|are) (simple|easy|clear|straightforward)\s*:/gi, severity: 'high', category: 'structure' },
+        { name: 'My take colon', pattern: /\b(my (take|view|perspective|advice|thoughts|opinion)|the (idea|concept|insight|point))\s*:/gi, severity: 'high', category: 'structure' },
         
         // Formulaic transitions
-        { name: 'Formulaic transition', pattern: /\b(However|Moreover|Furthermore|In conclusion|That said|To be fair|Interestingly|Notably|Additionally|Consequently|Nevertheless),/g, severity: 'medium' },
+        { name: 'Transition: however', pattern: /\bHowever,/g, severity: 'high', category: 'transition' },
+        { name: 'Transition: moreover', pattern: /\b(Moreover|Furthermore|Additionally|Consequently|Nevertheless|Nonetheless),/g, severity: 'high', category: 'transition' },
+        { name: 'Transition: that said', pattern: /\b(That said|That being said|With that (said|in mind)|Having said that),/g, severity: 'high', category: 'transition' },
+        { name: 'Transition: interestingly', pattern: /\b(Interestingly|Notably|Importantly|Significantly|Remarkably|Surprisingly)(,| enough)/g, severity: 'high', category: 'transition' },
         
-        // Singleton openers
-        { name: 'Singleton opener', pattern: /^(Here'?s the thing|The bottom line|Let me be clear|Here'?s what|Simply put|Look|The reality is|The truth is|At the end of the day)[.:,]/gm, severity: 'high' },
+        // Formulaic conclusions
+        { name: 'Conclusion: in summary', pattern: /\b(In (summary|conclusion|closing|essence)|To (sum up|summarize|conclude|wrap up)|All in all|When all is said and done)\b/gi, severity: 'high', category: 'closer' },
+        { name: 'Conclusion: at the end', pattern: /\b(At the end of the day|Ultimately|Moving forward|Going forward|The bottom line)\b/gi, severity: 'high', category: 'closer' },
+        { name: 'Closer: what do you think', pattern: /\b(What do you think|I'?d love (to hear|your)|Thoughts|Agree|Let me know)\s*[?.]?\s*$/gim, severity: 'high', category: 'closer' },
         
-        // AI-specific phrases
-        { name: 'AI request acknowledgment', pattern: /\b(I'?d love (your|to hear)|Great question|That'?s (a|an) (great|excellent|fascinating|important) (question|point|topic))/gi, severity: 'high' },
-        { name: 'Formulaic conclusions', pattern: /\b(In summary|To sum up|All in all|In essence|At its core|When all is said and done)\b/gi, severity: 'medium' },
+        // Meta-commentary
+        { name: 'Meta: as I mentioned', pattern: /\b(as I (mentioned|said|noted|discussed)|as we (discussed|saw|noted)|mentioned (above|earlier|previously))\b/gi, severity: 'high', category: 'meta' },
+        { name: 'Meta: this brings us', pattern: /\b(this (brings|leads|takes) us to|which brings (us|me) to|the point (I'm|I am) making)\b/gi, severity: 'high', category: 'meta' },
+        { name: 'Meta: let me explain', pattern: /\b(let me (explain|elaborate|clarify|break this down)|I('ll| will) (explain|elaborate|break))\b/gi, severity: 'high', category: 'meta' },
         
-        // Rhetorical patterns
-        { name: 'Rhetorical Q&A', pattern: /\?[\s\n]+(It |This |That |The answer |Well, )(is|means|comes down to)/g, severity: 'medium' },
+        // Rhetorical Q&A patterns
+        { name: 'Rhetorical Q&A', pattern: /\?[\s\n]+(It |This |That |The answer |Well,? |So,? |And |But )?(is|means|comes? down to|boils? down to)/gi, severity: 'high', category: 'structure' },
+        { name: 'Self-answered question', pattern: /\?\s+(The answer is|It'?s simple|Simply put|In short)/gi, severity: 'high', category: 'structure' },
         
-        // Lists and structure
-        { name: 'Bullet/numbered list', pattern: /^[\s]*[-•*]\s|^\s*\d+\.\s/gm, severity: 'high' },
+        // ============================================
+        // MEDIUM SEVERITY - Fix when possible
+        // ============================================
         
-        // Excessive punctuation
-        { name: 'Excessive exclamation', pattern: /!/g, severity: 'low', threshold: 2 },
+        // Overly formal phrasing
+        { name: 'Formal: it is worth noting', pattern: /\b(it is (worth|important to) (noting|note|mentioning|mention)|it bears mentioning|one might argue|it should be noted|it goes without saying)\b/gi, severity: 'medium', category: 'formality' },
+        { name: 'Formal: in order to', pattern: /\bin order to\b/gi, severity: 'medium', category: 'formality', threshold: 2 },
+        { name: 'Formal: utilize/leverage', pattern: /\b(utilize|leverage|facilitate|endeavor|commence)\b/gi, severity: 'medium', category: 'formality' },
         
-        // Hedge words
-        { name: 'Hedge words', pattern: /\b(perhaps|maybe|might|could potentially|it seems|arguably|presumably)\b/gi, severity: 'low', threshold: 3 },
+        // AI vocabulary clusters
+        { name: 'AI vocab: landscape/ecosystem', pattern: /\b(landscape|ecosystem|paradigm|synergy|holistic|robust)\b/gi, severity: 'medium', category: 'vocabulary', threshold: 2 },
+        { name: 'AI vocab: journey/space', pattern: /\b(journey|space|realm|sphere|arena|dynamics)\b(?! (bar|shuttle|station|program|mission))/gi, severity: 'medium', category: 'vocabulary', threshold: 2 },
+        { name: 'AI vocab: seamless/streamlined', pattern: /\b(seamless|streamlined|comprehensive|innovative|cutting-?edge|state-?of-?the-?art)\b/gi, severity: 'medium', category: 'vocabulary', threshold: 2 },
         
-        // Overly formal AI phrasing
-        { name: 'Overly formal phrasing', pattern: /\b(it is worth noting|it bears mentioning|one might argue|it should be noted|it is important to)\b/gi, severity: 'medium' },
+        // Balanced perspective forcing
+        { name: 'Forced balance', pattern: /\b(on (the )?one hand|on the other hand|while .{10,50} (is )?(true|valid|important),? (it'?s|there'?s|we) (also|must)|pros and cons|both sides)\b/gi, severity: 'medium', category: 'structure' },
         
-        // Common AI intensifiers
-        { name: 'AI intensifiers', pattern: /\b(incredibly|extremely|absolutely|truly|deeply|genuinely|actually|literally|certainly)\b/gi, severity: 'low', threshold: 3 }
+        // Passive constructions
+        { name: 'Passive: it was', pattern: /\b(it was (determined|decided|found|discovered|noted|observed|concluded|established)|the decision was made|it has been shown)\b/gi, severity: 'medium', category: 'voice' },
+        
+        // Nominalization
+        { name: 'Nominalization', pattern: /\b(make (a|an|the) (decision|determination|assessment|evaluation)|provide (assistance|guidance|support)|conduct (an?|the) (investigation|analysis|review))\b/gi, severity: 'medium', category: 'voice' },
+        
+        // Engagement bait
+        { name: 'Engagement bait', pattern: /\b(you won'?t believe|this will (blow|change)|the secret (is|to)|what (happened )?next|number \d+ will|you need to know)\b/gi, severity: 'medium', category: 'tone' },
+        
+        // ============================================
+        // LOW SEVERITY - Flag but don't require fix
+        // ============================================
+        
+        // Intensifiers (only flag if excessive)
+        { name: 'Intensifiers', pattern: /\b(incredibly|extremely|absolutely|truly|deeply|genuinely|literally|certainly|undoubtedly|remarkably|exceptionally|fundamentally)\b/gi, severity: 'low', category: 'vocabulary', threshold: 3 },
+        
+        // Hedge words (only flag if excessive)
+        { name: 'Hedge words', pattern: /\b(perhaps|maybe|might|could potentially|it seems|arguably|presumably|seemingly|apparently)\b/gi, severity: 'low', category: 'vocabulary', threshold: 3 },
+        
+        // Excessive exclamation
+        { name: 'Exclamation marks', pattern: /!/g, severity: 'low', category: 'punctuation', threshold: 2 },
+        
+        // Filler adjectives (only flag if excessive)
+        { name: 'Filler adjectives', pattern: /\b(various|numerous|significant|substantial|specific|particular|certain|given)\b/gi, severity: 'low', category: 'vocabulary', threshold: 4 },
+        
+        // Empty intensification
+        { name: 'Empty intensification', pattern: /\b(truly transformative|deeply impactful|genuinely meaningful|incredibly powerful|absolutely essential|critically important)\b/gi, severity: 'low', category: 'vocabulary' },
+        
+        // Reader address (only flag if excessive)
+        { name: 'Reader address', pattern: /\b(you might (be wondering|think|notice)|as you can see|you'?ll (notice|find|see)|if you'?re like me)\b/gi, severity: 'low', category: 'voice', threshold: 2 }
     ];
 
     function detectSlop(text) {
         const issues = [];
+        const categoryStats = {};
 
         for (const pattern of SLOP_PATTERNS) {
             const matches = text.match(pattern.pattern);
@@ -205,50 +529,259 @@ Return ONLY the generated content. No explanations, no meta-commentary, no "Here
                         type: pattern.name,
                         count: count,
                         severity: pattern.severity,
+                        category: pattern.category,
                         examples: matches.slice(0, 3)
                     });
+                    
+                    // Track category stats
+                    categoryStats[pattern.category] = (categoryStats[pattern.category] || 0) + count;
                 }
             }
         }
-
-        return issues;
+        
+        // Calculate overall slop score (0-100, lower is better)
+        const criticalCount = issues.filter(i => i.severity === 'critical').reduce((sum, i) => sum + i.count, 0);
+        const highCount = issues.filter(i => i.severity === 'high').reduce((sum, i) => sum + i.count, 0);
+        const mediumCount = issues.filter(i => i.severity === 'medium').reduce((sum, i) => sum + i.count, 0);
+        const lowCount = issues.filter(i => i.severity === 'low').reduce((sum, i) => sum + i.count, 0);
+        
+        const slopScore = Math.min(100, (criticalCount * 20) + (highCount * 10) + (mediumCount * 5) + (lowCount * 2));
+        
+        return {
+            issues,
+            categoryStats,
+            slopScore,
+            requiresFix: criticalCount > 0 || highCount > 2,
+            summary: {
+                critical: criticalCount,
+                high: highCount,
+                medium: mediumCount,
+                low: lowCount
+            }
+        };
     }
 
-    // Auto-fix slop by rewriting problematic text
-    async function fixSlop(text, apiConfig) {
-        const fixPrompt = `You are an expert editor. The following text contains AI writing patterns that need to be fixed. Rewrite the text to sound more natural and human while preserving the exact meaning and voice.
+    // Tier 1: Instant local fixes that don't need LLM
+    function applyLocalFixes(text) {
+        let fixed = text;
+        let fixesApplied = [];
+        
+        // Em dash fixes - replace with appropriate punctuation
+        // Pattern: "word—word" (no spaces) → "word, word" or "word - word"
+        // Pattern: "word — word" (with spaces) → "word, word" or restructure
+        const emDashCount = (fixed.match(/—/g) || []).length;
+        if (emDashCount > 0) {
+            // Em dash with spaces around it (parenthetical) → commas
+            fixed = fixed.replace(/\s—\s/g, ', ');
+            // Em dash at end of clause followed by explanation → colon or comma
+            fixed = fixed.replace(/—(?=[A-Z])/g, '. ');
+            // Em dash connecting words → comma
+            fixed = fixed.replace(/—/g, ', ');
+            // Clean up double commas
+            fixed = fixed.replace(/,\s*,/g, ',');
+            fixesApplied.push(`Removed ${emDashCount} em dash(es)`);
+        }
+        
+        // En dash fixes
+        const enDashCount = (fixed.match(/–/g) || []).length;
+        if (enDashCount > 0) {
+            // En dash used as em dash replacement
+            fixed = fixed.replace(/\s–\s/g, ', ');
+            fixed = fixed.replace(/–/g, '-');
+            fixesApplied.push(`Removed ${enDashCount} en dash(es)`);
+        }
+        
+        // Remove trailing engagement bait
+        const engagementPatterns = [
+            /\s*What do you think\??\s*$/i,
+            /\s*Let me know (?:your thoughts|what you think|in the comments)!?\s*$/i,
+            /\s*I['']d love (?:your take|to hear from you|your thoughts)!?\s*$/i,
+            /\s*Thoughts\??\s*$/i,
+            /\s*Agree or disagree\??\s*$/i,
+            /\s*Share your (?:thoughts|experience|take)!?\s*$/i
+        ];
+        
+        for (const pattern of engagementPatterns) {
+            if (pattern.test(fixed)) {
+                fixed = fixed.replace(pattern, '');
+                fixesApplied.push('Removed trailing engagement bait');
+                break;
+            }
+        }
+        
+        // Remove sycophantic openers
+        const sycophantPatterns = [
+            /^(?:Great question!|That's (?:a )?(?:great|excellent|fascinating|interesting) (?:question|point)!?)\s*/i,
+            /^(?:Absolutely!|Definitely!|Of course!)\s*/i
+        ];
+        
+        for (const pattern of sycophantPatterns) {
+            if (pattern.test(fixed)) {
+                fixed = fixed.replace(pattern, '');
+                fixesApplied.push('Removed sycophantic opener');
+                break;
+            }
+        }
+        
+        // Remove double exclamation marks
+        if (/!!+/.test(fixed)) {
+            fixed = fixed.replace(/!!+/g, '!');
+            fixesApplied.push('Fixed excessive exclamation marks');
+        }
+        
+        // Remove triple dots used excessively (keep single ellipsis)
+        if (/\.{4,}/.test(fixed)) {
+            fixed = fixed.replace(/\.{4,}/g, '...');
+            fixesApplied.push('Fixed excessive ellipses');
+        }
+        
+        // Clean up spacing issues from fixes
+        fixed = fixed.replace(/\s+/g, ' ').trim();
+        fixed = fixed.replace(/\s+([.,!?])/g, '$1');
+        fixed = fixed.replace(/([.,!?])(?=[A-Za-z])/g, '$1 ');
+        
+        return {
+            text: fixed,
+            fixesApplied,
+            wasModified: fixesApplied.length > 0
+        };
+    }
 
-FIX THESE SPECIFIC ISSUES:
-1. Remove ALL em dashes (—) and en dashes (–). Replace with commas, semicolons, periods, or restructure sentences.
-2. Remove ALL antithetical constructions like "is not X but Y" or "It's not about X, it's about Y". Rewrite as direct statements.
-3. Change third-person references like "The post walks through" to first-person like "I walk through" or "my post walks through".
-4. Remove formulaic transitions (However, Moreover, Furthermore, etc.). Use natural connectors or restructure.
-5. Remove singleton openers (Here's the thing, The bottom line, etc.). Start with substantive content.
-6. Remove rhetorical questions followed by answers. Make direct statements instead.
-7. Write in flowing prose. Never use bullet points, numbered lists, or tables.
-8. Remove hedge words (perhaps, maybe, might) where possible. Be direct.
-9. Remove sycophantic phrases (Great question, That's fascinating, etc.).
+    // Auto-fix slop by rewriting problematic text with comprehensive AI pattern removal
+    async function fixSlop(text, apiConfig, slopResults) {
+        // TIER 1: Apply instant local fixes first
+        const localResult = applyLocalFixes(text);
+        let fixedText = localResult.text;
+        
+        // Re-check after local fixes
+        let recheck = detectSlop(fixedText);
+        
+        // If local fixes resolved the critical issues, return early
+        if (!recheck.requiresFix) {
+            console.log('[WriteMe] Local fixes sufficient:', localResult.fixesApplied);
+            return fixedText;
+        }
+        
+        // TIER 2: LLM fix for complex structural issues
+        console.log('[WriteMe] Local fixes applied, but LLM fix needed for remaining issues');
+        
+        // Build a targeted fix prompt based on detected issues (use recheck results after local fixes)
+        const detectedCategories = recheck?.categoryStats ? Object.keys(recheck.categoryStats) : [];
+        const criticalIssues = recheck?.issues?.filter(i => i.severity === 'critical') || [];
+        const highIssues = recheck?.issues?.filter(i => i.severity === 'high') || [];
+        
+        // Create specific examples from detected issues
+        const specificExamples = [...criticalIssues, ...highIssues]
+            .slice(0, 10)
+            .map(issue => `- "${issue.examples?.[0] || issue.type}"`)
+            .join('\n');
 
-TEXT TO FIX:
-${text}
+        const fixPrompt = `You are an expert human editor specializing in removing AI writing patterns. Your goal is to make text sound authentically human while preserving meaning and the writer's intended voice.
 
-Return ONLY the fixed text. No explanations, no meta-commentary. Just the improved content.`;
+## DETECTED AI PATTERNS IN THIS TEXT:
+${specificExamples || '(Multiple AI patterns detected)'}
+
+## COMPREHENSIVE FIX INSTRUCTIONS:
+
+### PUNCTUATION (Critical)
+1. REMOVE ALL EM DASHES (—) AND EN DASHES (–)
+   - Replace with commas, semicolons, periods, or restructure entirely
+   - "The solution—which took months—worked" → "The solution, which took months, worked."
+   - "And then it happened—everything changed" → "And then it happened. Everything changed."
+
+### STRUCTURE (Critical)
+2. ELIMINATE ANTITHETICAL CONSTRUCTIONS
+   - "is not X but Y" → State what it IS directly
+   - "It's not about the tech, it's about people" → "This is fundamentally about people."
+   - "Less about X and more about Y" → "This focuses on Y."
+
+3. FIX THIRD-PERSON SELF-REFERENCES
+   - "The post explores" → "I explore" or "My post explores"
+   - "This article discusses" → "I discuss"
+
+4. REMOVE ALL LISTS
+   - Convert bullet points and numbered lists to flowing prose
+   - Integrate items naturally into paragraphs
+
+### OPENERS & CLOSERS (Critical)
+5. REMOVE LAZY DECLARATIVE OPENERS
+   - "Here's the thing:" → Start with the actual point
+   - "The bottom line:" → Make a direct statement
+   - "Let me explain:" → Just explain
+   - "Picture this:" → Start with the scene directly
+
+6. REMOVE COLON DECLARATIONS
+   - "The answer is simple: X" → "X works because..." (integrate naturally)
+   - "My take: Y" → Just state Y as a direct opinion
+
+7. REMOVE FORMULAIC CLOSERS
+   - "In conclusion..." → Remove or make the final point directly
+   - "What do you think?" → Remove engagement bait
+   - "Let me know your thoughts!" → Remove
+
+### TRANSITIONS (High)
+8. REPLACE FORMULAIC TRANSITIONS
+   - "However," → Restructure without transition or use natural flow
+   - "Moreover," "Furthermore," "Additionally," → Cut or restructure
+   - "That said," "To be fair," → Remove hedge
+
+### TONE (Critical)
+9. REMOVE SYCOPHANTIC PHRASES
+   - "Great question!" → Remove entirely
+   - "That's fascinating!" → Remove entirely
+   - "I'd love your take" → Remove entirely
+
+10. REMOVE META-COMMENTARY
+    - "As I mentioned above" → Remove
+    - "Let me break this down" → Just break it down
+    - "This brings us to" → Remove, just move to next point
+
+### RHETORICAL PATTERNS (High)
+11. FIX RHETORICAL Q&A
+    - "What does this mean? It means..." → "This means..."
+    - Question then immediate answer → Direct statement
+
+### VOCABULARY (Medium)
+12. REDUCE AI VOCABULARY CLUSTERS
+    - "leverage" → "use"
+    - "utilize" → "use"
+    - "landscape" → be specific (market, industry, field)
+    - "journey" → be specific (process, experience, time)
+    - "seamless/robust/comprehensive" → be specific
+
+13. REDUCE INTENSIFIERS
+    - "incredibly powerful" → "powerful" or be specific
+    - "truly transformative" → describe the actual transformation
+
+## RULES:
+- Preserve the EXACT meaning and key information
+- Match the writer's overall voice and formality level
+- Vary sentence lengths naturally (some short, some long)
+- Prefer active voice
+- Be direct and specific
+- If restructuring removes meaning, find another way to fix it
+
+## TEXT TO FIX:
+${fixedText}
+
+Return ONLY the fixed text. No explanations, no comments, no "Here's the revised text:" prefix. Just output the improved content directly.`;
 
         try {
             const response = await ApiClient.sendRequest({
                 ...apiConfig,
-                systemMessage: 'You are a meticulous editor who removes AI writing patterns. Output only the revised text with no commentary.',
+                systemMessage: 'You are a meticulous human editor. You remove AI writing patterns while preserving meaning and voice. Output ONLY the revised text with zero commentary or explanation.',
                 userMessage: fixPrompt
             });
 
-            // Clean up response
+            // Clean up response - remove any AI-style prefixes
             let fixed = response.trim();
-            fixed = fixed.replace(/^(Here'?s|Here is|Sure,? here'?s)[^:]*:\s*/i, '');
+            fixed = fixed.replace(/^(Here'?s|Here is|Sure,? here'?s|I'?ve|Below is|The following is)[^:.\n]*[:.]\s*/i, '');
+            fixed = fixed.replace(/^[\s\n]*"(.+)"[\s\n]*$/s, '$1'); // Remove wrapping quotes
             
             return fixed;
         } catch (err) {
             console.error('[WritingAnalyzer] Failed to fix slop:', err);
-            return text; // Return original if fix fails
+            return fixedText; // Return locally-fixed text if LLM fix fails
         }
     }
 

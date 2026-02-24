@@ -102,7 +102,9 @@
         elements.qualitySuggestion = document.getElementById('quality-suggestion');
 
         // Generate step
-        elements.contentType = document.getElementById('content-type');
+        elements.contentCategory = document.getElementById('content-category');
+        elements.toneSelector = document.getElementById('tone-selector');
+        elements.contentTone = document.getElementById('content-tone');
         elements.promptInput = document.getElementById('prompt-input');
         elements.btnGenerate = document.getElementById('btn-generate');
         elements.generateLoading = document.getElementById('generate-loading');
@@ -151,6 +153,36 @@
         elements.fullProfileContent = document.getElementById('full-profile-content');
         elements.btnCopyProfileModal = document.getElementById('btn-copy-profile-modal');
         elements.btnCloseFullProfileOk = document.getElementById('btn-close-full-profile-ok');
+
+        // Clear profile modal (on generate step)
+        elements.btnClearProfileGenerate = document.getElementById('btn-clear-profile-generate');
+        elements.clearProfileModal = document.getElementById('clear-profile-modal');
+        elements.btnCloseClearProfile = document.getElementById('btn-close-clear-profile');
+        elements.btnClearProfileCancel = document.getElementById('btn-clear-profile-cancel');
+        elements.btnClearProfileConfirm = document.getElementById('btn-clear-profile-confirm');
+
+        // Share buttons
+        elements.shareButtons = document.getElementById('share-buttons');
+        elements.btnShareX = document.getElementById('btn-share-x');
+        elements.btnShareLinkedin = document.getElementById('btn-share-linkedin');
+        elements.btnShareFacebook = document.getElementById('btn-share-facebook');
+        elements.btnShareReddit = document.getElementById('btn-share-reddit');
+        elements.btnShareInstagram = document.getElementById('btn-share-instagram');
+        elements.btnShareThreads = document.getElementById('btn-share-threads');
+        elements.btnShowAllShare = document.getElementById('btn-show-all-share');
+        elements.shareAllPlatforms = document.getElementById('share-all-platforms');
+
+        // LinkedIn share modal
+        elements.linkedinShareModal = document.getElementById('linkedin-share-modal');
+        elements.btnCloseLinkedinModal = document.getElementById('btn-close-linkedin-modal');
+        elements.btnLinkedinOpen = document.getElementById('btn-linkedin-open');
+
+        // URL content preview modal
+        elements.urlContentModal = document.getElementById('url-content-modal');
+        elements.btnCloseUrlContent = document.getElementById('btn-close-url-content');
+        elements.urlContentSourceLink = document.getElementById('url-content-source-link');
+        elements.urlContentText = document.getElementById('url-content-text');
+        elements.btnUrlContentSave = document.getElementById('btn-url-content-save');
 
         // Professional style modal
         elements.professionalStyleModal = document.getElementById('professional-style-modal');
@@ -261,6 +293,10 @@
         elements.btnCopyOutput.addEventListener('click', copyOutput);
         elements.btnBackProfile.addEventListener('click', () => goToStep('profile'));
 
+        // Content type category and tone selection
+        elements.contentCategory?.addEventListener('change', handleContentCategoryChange);
+        elements.contentTone?.addEventListener('change', detectPlatformInPrompt);
+
         // Profile preview bar
         elements.btnQuickProfile?.addEventListener('click', showQuickProfile);
         elements.btnFullProfile?.addEventListener('click', showFullProfile);
@@ -301,6 +337,47 @@
                 setTimeout(() => elements.btnCopyProfileModal.textContent = 'Copy Profile JSON', 2000);
             }
         });
+
+        // Clear profile modal (from generate step)
+        elements.btnClearProfileGenerate?.addEventListener('click', () => showModal('clear-profile-modal'));
+        elements.btnCloseClearProfile?.addEventListener('click', () => hideModal('clear-profile-modal'));
+        elements.btnClearProfileCancel?.addEventListener('click', () => hideModal('clear-profile-modal'));
+        elements.btnClearProfileConfirm?.addEventListener('click', clearProfileAndRestart);
+
+        // Share buttons - primary
+        elements.btnShareX?.addEventListener('click', () => shareToX());
+        elements.btnShareLinkedin?.addEventListener('click', () => shareToLinkedin());
+        elements.btnShareFacebook?.addEventListener('click', () => shareToFacebook());
+        elements.btnShareReddit?.addEventListener('click', () => shareToReddit());
+        elements.btnShareInstagram?.addEventListener('click', () => shareToInstagram());
+        elements.btnShareThreads?.addEventListener('click', () => shareToThreads());
+        
+        // Share buttons - all platforms section
+        document.getElementById('btn-share-x-all')?.addEventListener('click', () => shareToX());
+        document.getElementById('btn-share-linkedin-all')?.addEventListener('click', () => shareToLinkedin());
+        document.getElementById('btn-share-facebook-all')?.addEventListener('click', () => shareToFacebook());
+        document.getElementById('btn-share-reddit-all')?.addEventListener('click', () => shareToReddit());
+        
+        // Show all share platforms toggle
+        elements.btnShowAllShare?.addEventListener('click', () => {
+            elements.shareAllPlatforms?.classList.toggle('hidden');
+            const isHidden = elements.shareAllPlatforms?.classList.contains('hidden');
+            elements.btnShowAllShare.textContent = isHidden ? 'More platforms' : 'Hide';
+        });
+
+        // LinkedIn share modal
+        elements.btnCloseLinkedinModal?.addEventListener('click', () => hideModal('linkedin-share-modal'));
+        elements.btnLinkedinOpen?.addEventListener('click', () => {
+            hideModal('linkedin-share-modal');
+            window.open('https://www.linkedin.com/feed/', '_blank');
+        });
+
+        // URL content preview modal
+        elements.btnCloseUrlContent?.addEventListener('click', () => hideModal('url-content-modal'));
+        elements.btnUrlContentSave?.addEventListener('click', saveUrlContent);
+        
+        // Delegate click events on URL artifacts list
+        elements.urlArtifactsList?.addEventListener('click', handleUrlArtifactClick);
 
         // Professional style modal
         elements.btnCloseProfStyle?.addEventListener('click', () => hideModal('professional-style-modal'));
@@ -346,6 +423,45 @@
         elements.puterModel?.addEventListener('change', saveSettings);
         elements.ollamaUrl?.addEventListener('change', saveSettings);
         elements.ollamaModel?.addEventListener('change', saveSettings);
+
+        // Initialize content category state
+        handleContentCategoryChange();
+    }
+
+    // --- Content Type Management ---
+
+    // Categories that have tone options
+    const CATEGORIES_WITH_TONES = ['social', 'blog', 'email', 'bio'];
+
+    function handleContentCategoryChange() {
+        const category = elements.contentCategory?.value;
+        const hasTones = CATEGORIES_WITH_TONES.includes(category);
+        
+        if (hasTones) {
+            elements.toneSelector?.classList.remove('hidden');
+            // Set default tone based on category
+            if (category === 'email') {
+                elements.contentTone.value = 'professional';
+            } else {
+                elements.contentTone.value = 'personal';
+            }
+        } else {
+            elements.toneSelector?.classList.add('hidden');
+        }
+        
+        // Re-detect platform when category changes
+        detectPlatformInPrompt();
+    }
+
+    function getContentTypeKey() {
+        const category = elements.contentCategory?.value || 'blog';
+        const hasTones = CATEGORIES_WITH_TONES.includes(category);
+        
+        if (hasTones) {
+            const tone = elements.contentTone?.value || 'personal';
+            return `${category}-${tone}`;
+        }
+        return category;
     }
 
     // --- Settings Management ---
@@ -846,7 +962,7 @@
 
         try {
             const config = getApiConfig();
-            const contentType = elements.contentType.value;
+            const contentType = getContentTypeKey();
 
             // Preflight check
             const preflight = await ApiClient.preflightCheck(config);
@@ -903,22 +1019,32 @@
                 platformContext
             );
 
-            // Auto-fix slop before presenting
-            let slopIssues = WritingAnalyzer.detectSlop(content);
-            if (slopIssues.some(i => i.severity === 'high')) {
-                console.log('[WriteMe] High severity slop detected, auto-fixing...');
+            // Auto-fix slop before presenting - comprehensive AI pattern detection
+            let slopResults = WritingAnalyzer.detectSlop(content);
+            console.log('[WriteMe] Slop detection:', slopResults.slopScore, 'score,', slopResults.issues.length, 'issues');
+            
+            if (slopResults.requiresFix) {
+                console.log('[WriteMe] Critical/high severity slop detected, auto-fixing...');
                 const loadingStatus = document.querySelector('#generate-loading .loading-status');
-                if (loadingStatus) loadingStatus.textContent = 'Fixing AI patterns in generated text...';
+                if (loadingStatus) loadingStatus.textContent = 'Removing AI patterns from generated text...';
 
-                content = await WritingAnalyzer.fixSlop(content, config);
-                slopIssues = WritingAnalyzer.detectSlop(content);
+                content = await WritingAnalyzer.fixSlop(content, config, slopResults);
+                slopResults = WritingAnalyzer.detectSlop(content);
+                console.log('[WriteMe] Post-fix slop:', slopResults.slopScore, 'score');
             }
 
             // Display result
             elements.generatedContent.textContent = content;
+            
+            // Store for sharing
+            state.generatedContent = content;
+            state.lastDetectedPlatform = detectedPlatform;
+            
+            // Update share buttons visibility
+            updateShareButtons();
 
             // Check for remaining slop
-            UIRenderer.renderSlopCheck(slopIssues, elements.slopIssues);
+            UIRenderer.renderSlopCheck(slopResults, elements.slopIssues);
 
             elements.generateLoading.classList.add('hidden');
             elements.outputSection.classList.remove('hidden');
@@ -981,6 +1107,173 @@
         } catch {
             UIRenderer.showError('Failed to copy to clipboard.');
         }
+    }
+
+    // --- Sharing Functions ---
+
+    // Platform to share button mapping
+    const PLATFORM_SHARE_MAP = {
+        'x': 'btn-share-x',
+        'twitter': 'btn-share-x',
+        'linkedin': 'btn-share-linkedin',
+        'facebook': 'btn-share-facebook',
+        'instagram': 'btn-share-instagram',
+        'threads': 'btn-share-threads',
+        'reddit': 'btn-share-reddit'
+    };
+
+    function updateShareButtons() {
+        const platform = state.lastDetectedPlatform;
+        const socialPlatforms = Object.keys(PLATFORM_SHARE_MAP);
+        
+        // Hide all primary share buttons first
+        const allShareBtns = ['btn-share-x', 'btn-share-linkedin', 'btn-share-facebook', 'btn-share-reddit', 'btn-share-instagram', 'btn-share-threads'];
+        allShareBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.classList.add('hidden');
+        });
+        
+        // Hide the "more platforms" section
+        elements.shareAllPlatforms?.classList.add('hidden');
+        elements.btnShowAllShare?.classList.remove('hidden');
+        
+        if (platform && socialPlatforms.includes(platform)) {
+            elements.shareButtons?.classList.remove('hidden');
+            
+            // Show only the detected platform's button
+            const targetBtnId = PLATFORM_SHARE_MAP[platform];
+            const targetBtn = document.getElementById(targetBtnId);
+            if (targetBtn) {
+                targetBtn.classList.remove('hidden');
+            }
+        } else {
+            elements.shareButtons?.classList.add('hidden');
+        }
+        
+        // Update whodoneit link
+        updateWhodoneitLink();
+    }
+
+    function updateWhodoneitLink() {
+        const content = state.generatedContent || '';
+        const whodoneitLink = document.getElementById('whodoneit-link');
+        const whodoneitCheckLink = document.getElementById('whodoneit-check-link');
+        
+        if (content && whodoneitLink && whodoneitCheckLink) {
+            const encodedContent = encodeURIComponent(content.substring(0, 2000)); // Limit for URL length
+            whodoneitCheckLink.href = `https://97115104.github.io/whodoneit/?content=${encodedContent}&enter`;
+            whodoneitLink.classList.remove('hidden');
+        } else if (whodoneitLink) {
+            whodoneitLink.classList.add('hidden');
+        }
+    }
+
+    function getContentWithUrl() {
+        let content = state.generatedContent || '';
+        const url = state.extractedUrls?.[0]; // First extracted URL from prompt
+        
+        if (url && !content.includes(url)) {
+            content = content.trim() + '\n\n' + url;
+        }
+        
+        return content;
+    }
+
+    function shareToX() {
+        const content = getContentWithUrl();
+        const encoded = encodeURIComponent(content);
+        window.open(`https://twitter.com/intent/tweet?text=${encoded}`, '_blank');
+    }
+
+    function shareToLinkedin() {
+        const content = getContentWithUrl();
+        
+        // LinkedIn doesn't support prefilled text - copy to clipboard and open LinkedIn
+        navigator.clipboard.writeText(content).then(() => {
+            showLinkedInModal();
+        });
+    }
+
+    function showLinkedInModal() {
+        // Show modal informing user content is copied
+        showModal('linkedin-share-modal');
+    }
+
+    function shareToFacebook() {
+        const url = state.extractedUrls?.[0];
+        
+        if (url) {
+            const encodedUrl = encodeURIComponent(url);
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank');
+        } else {
+            const content = state.generatedContent || '';
+            navigator.clipboard.writeText(content);
+            UIRenderer.showToast('Content copied. Open Facebook to paste and share.');
+        }
+    }
+
+    function shareToReddit() {
+        const content = getContentWithUrl();
+        const url = state.extractedUrls?.[0] || '';
+        const title = content.split('\n')[0].substring(0, 100) || 'Shared post';
+        
+        const encodedTitle = encodeURIComponent(title);
+        
+        if (url) {
+            const encodedUrl = encodeURIComponent(url);
+            window.open(`https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`, '_blank');
+        } else {
+            const encodedText = encodeURIComponent(content);
+            window.open(`https://www.reddit.com/submit?title=${encodedTitle}&text=${encodedText}`, '_blank');
+        }
+    }
+
+    function shareToInstagram() {
+        // Instagram doesn't have web share - copy to clipboard
+        const content = getContentWithUrl();
+        navigator.clipboard.writeText(content);
+        UIRenderer.showToast('Content copied! Open Instagram to paste.');
+    }
+
+    function shareToThreads() {
+        // Threads doesn't have web share API yet - copy to clipboard
+        const content = getContentWithUrl();
+        navigator.clipboard.writeText(content);
+        UIRenderer.showToast('Content copied! Open Threads to paste.');
+    }
+
+    // --- Clear Profile Functions ---
+
+    function clearProfileAndRestart() {
+        // Clear state
+        state.profile = null;
+        state.samples = [];
+        state.profileAskedToSave = false;
+        state.generatedContent = null;
+        state.lastDetectedPlatform = null;
+        state.extractedUrls = [];
+        
+        // Clear localStorage
+        clearSavedProfile();
+        
+        // Clear UI
+        elements.samplesList.innerHTML = '';
+        elements.profileContent?.classList.add('hidden');
+        elements.outputSection?.classList.add('hidden');
+        elements.shareButtons?.classList.add('hidden');
+        elements.urlArtifacts?.classList.add('hidden');
+        elements.platformArtifacts?.classList.add('hidden');
+        elements.promptInput.value = '';
+        elements.generatedContent.textContent = '';
+        
+        // Update samples counters
+        updateSamplesDisplay();
+        
+        // Hide modal and go to input step
+        hideModal('clear-profile-modal');
+        goToStep('input');
+        
+        UIRenderer.showToast('Profile cleared. Start fresh with new samples.');
     }
 
     // --- Step Navigation ---
@@ -1281,95 +1574,119 @@
 
     // --- Platform Detection ---
 
+    // SVG icons for platforms
+    const PLATFORM_ICONS = {
+        x: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+        linkedin: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
+        facebook: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+        instagram: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.757-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"/></svg>',
+        threads: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.103-3.96-3.91-5.963-8.349-5.958-2.868.004-5.078.966-6.565 2.86-1.27 1.618-1.97 3.913-1.999 6.967.03 3.057.73 5.35 1.999 6.966 1.484 1.894 3.687 2.857 6.55 2.861 2.478-.032 4.378-.678 5.648-1.921 1.373-1.343 1.463-2.96 1.322-3.94-.198-1.395-.795-2.478-1.736-3.152-.943-.678-2.053-.986-3.243-.986h-.618l-.114-.002c-1.294.014-2.378.343-3.14.95-.659.528-1.007 1.236-1.007 2.048 0 .72.315 1.37.885 1.828.592.476 1.417.738 2.322.738.84 0 1.58-.184 2.204-.548.518-.302.943-.741 1.262-1.31l1.763 1.04c-.5.877-1.185 1.57-2.04 2.058-.966.551-2.08.833-3.312.838h-.026c-1.354-.007-2.54-.358-3.44-.953-1.044-.69-1.67-1.727-1.813-3h-.002c-.136-1.235.18-2.315 1.044-3.243.92-.992 2.267-1.594 3.886-1.752l.162-.015.144-.004c1.55-.015 2.92.265 4.076.821 1.202.58 2.152 1.417 2.823 2.492.645 1.035 1.026 2.275 1.126 3.678.177 2.466-.53 4.636-2.058 6.18-1.708 1.721-4.2 2.612-7.416 2.648z"/></svg>',
+        reddit: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>',
+        tiktok: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>',
+        bluesky: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z"/></svg>',
+        mastodon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792 0 11.813 0h-.03c-3.98 0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611.118 1.24.325 2.47.62 3.68.55 2.237 2.777 4.098 4.96 4.857 2.336.792 4.849.923 7.256.38.265-.061.527-.132.786-.213.585-.184 1.27-.39 1.774-.753a.057.057 0 0 0 .023-.043v-1.809a.052.052 0 0 0-.02-.041.053.053 0 0 0-.046-.01 20.282 20.282 0 0 1-4.709.545c-2.73 0-3.463-1.284-3.674-1.818a5.593 5.593 0 0 1-.319-1.433.053.053 0 0 1 .066-.054c1.517.363 3.072.546 4.632.546.376 0 .75 0 1.125-.01 1.57-.044 3.224-.124 4.768-.422.038-.008.077-.015.11-.024 2.435-.464 4.753-1.92 4.989-5.604.008-.145.03-1.52.03-1.67.002-.512.167-3.63-.024-5.545zm-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976-1.23 0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35-1.112 0-1.668.668-1.668 1.978v6.218H4.822V8.102c0-1.31.337-2.35 1.011-3.12.696-.77 1.608-1.164 2.74-1.164 1.311 0 2.302.5 2.962 1.498l.638 1.06.638-1.06c.66-.999 1.65-1.498 2.96-1.498 1.13 0 2.043.395 2.74 1.164.675.77 1.012 1.81 1.012 3.12z"/></svg>',
+        email: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>',
+        substack: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg>'
+    };
+
     const PLATFORM_STYLES = {
         x: {
             name: 'X (Twitter)',
             icon: 'X',
             isProfessional: false,
             maxLength: 280,
-            style: 'Concise, punchy, thread-friendly. Use short sentences. Hashtags optional but sparingly. No formal greetings. Direct and engaging.',
+            style: 'EXTREMELY BRIEF. Single tweet = 1-2 short sentences max. No intros, no conclusions. Jump straight to the point. Each word must earn its place.',
             tone: 'casual, witty, conversational',
-            avoid: 'long paragraphs, formal language, excessive hashtags'
+            avoid: 'long paragraphs, formal language, excessive hashtags, introductions, conclusions, explanatory text',
+            brevity: 'critical'
         },
         twitter: {
             name: 'X (Twitter)',
             icon: 'X',
             isProfessional: false,
             maxLength: 280,
-            style: 'Concise, punchy, thread-friendly. Use short sentences. Hashtags optional but sparingly. No formal greetings. Direct and engaging.',
+            style: 'EXTREMELY BRIEF. Single tweet = 1-2 short sentences max. No intros, no conclusions. Jump straight to the point. Each word must earn its place.',
             tone: 'casual, witty, conversational',
-            avoid: 'long paragraphs, formal language, excessive hashtags'
+            avoid: 'long paragraphs, formal language, excessive hashtags, introductions, conclusions, explanatory text',
+            brevity: 'critical'
         },
         linkedin: {
             name: 'LinkedIn',
             icon: 'in',
             isProfessional: true,
-            maxLength: 3000,
-            style: 'Professional but personable. Start with a hook. Use line breaks for readability. Share insights and lessons. End with a question or call to action.',
+            maxLength: 700,
+            style: 'BRIEF AND PUNCHY. 3-5 short paragraphs max. Hook in first line. One insight per post. Use line breaks. No walls of text. Aim for 100-200 words, never exceed 300.',
             tone: 'professional, thoughtful, authentic',
-            avoid: 'jargon overload, overly casual language, clickbait',
-            professionalNote: 'LinkedIn is a professional platform. Your writing style may need adjustments for proper capitalization, grammar, and professional tone.'
+            avoid: 'jargon overload, long explanations, multi-point essays, clickbait, introductory preambles',
+            professionalNote: 'LinkedIn is a professional platform. Your writing style may need adjustments for proper capitalization, grammar, and professional tone.',
+            brevity: 'high'
         },
         facebook: {
             name: 'Facebook',
             icon: 'f',
             isProfessional: false,
-            maxLength: null,
-            style: 'Personal storytelling, conversational. Can be longer form. Photos/context welcome. Engaging questions work well.',
+            maxLength: 500,
+            style: 'CONVERSATIONAL AND BRIEF. 2-4 short paragraphs. Get to the point quickly. Personal but concise.',
             tone: 'friendly, personal, community-focused',
-            avoid: 'overly promotional content, cold corporate speak'
+            avoid: 'overly promotional content, cold corporate speak, long essays',
+            brevity: 'high'
         },
         instagram: {
             name: 'Instagram',
             icon: 'IG',
             isProfessional: false,
-            maxLength: 2200,
-            style: 'Visual-first thinking. Caption supports the image. Can be inspirational, behind-the-scenes, or storytelling. Hashtags at end or in first comment.',
+            maxLength: 300,
+            style: 'BRIEF CAPTIONS. 1-3 sentences for most posts. Let the visual do the talking. Save longer captions for storytelling only.',
             tone: 'aesthetic, aspirational, authentic',
-            avoid: 'walls of text, overly salesy language'
+            avoid: 'walls of text, overly salesy language, long explanations',
+            brevity: 'high'
         },
         tiktok: {
             name: 'TikTok',
             icon: 'TT',
             isProfessional: false,
-            maxLength: 300,
-            style: 'Gen Z friendly, trend-aware, hook in first 3 seconds mindset. Casual, fun, slightly chaotic energy welcome.',
+            maxLength: 150,
+            style: 'ULTRA BRIEF. 1-2 sentences max. Hook immediately. The video is the content, caption is just context.',
             tone: 'playful, relatable, trendy',
-            avoid: 'formal language, long explanations, corporate vibes'
+            avoid: 'formal language, long explanations, corporate vibes, walls of text',
+            brevity: 'critical'
         },
         threads: {
             name: 'Threads',
             icon: '@',
             isProfessional: false,
-            maxLength: 500,
-            style: 'Conversational, text-focused. Similar to Twitter but slightly more room to breathe. Good for hot takes and discussions.',
+            maxLength: 300,
+            style: 'BRIEF TAKES. 2-4 sentences. Similar to Twitter but slightly more room. Hot takes and discussions.',
             tone: 'casual, thoughtful, engaging',
-            avoid: 'hashtag spam, overly promotional content'
+            avoid: 'hashtag spam, overly promotional content, long essays',
+            brevity: 'high'
         },
         bluesky: {
             name: 'Bluesky',
             icon: 'BS',
             isProfessional: false,
             maxLength: 300,
-            style: 'Similar to early Twitter. Community-focused, less performative. Authentic voices do well.',
+            style: 'BRIEF AND AUTHENTIC. 1-3 sentences. Community-focused, less performative.',
             tone: 'genuine, curious, community-oriented',
-            avoid: 'engagement bait, corporate messaging'
+            avoid: 'engagement bait, corporate messaging, long posts',
+            brevity: 'high'
         },
         mastodon: {
             name: 'Mastodon',
             icon: 'M',
             isProfessional: false,
             maxLength: 500,
-            style: 'Community-minded, content warnings appreciated for sensitive topics. More thoughtful, less viral-chasing.',
+            style: 'THOUGHTFUL BUT BRIEF. 2-4 sentences typical. Content warnings when appropriate.',
             tone: 'respectful, community-focused, thoughtful',
-            avoid: 'engagement farming, cross-posting without context'
+            avoid: 'engagement farming, cross-posting without context, walls of text',
+            brevity: 'medium'
         },
         reddit: {
             name: 'Reddit',
             icon: 'r/',
             isProfessional: false,
             maxLength: null,
-            style: 'Context-rich, community-aware. Know your subreddit culture. Can be long-form for certain communities. Authenticity valued.',
+            style: 'Context-rich, community-aware. Know your subreddit culture. Brevity varies by sub.',
             tone: 'authentic, detailed, community-specific',
             avoid: 'self-promotion, not reading the room/subreddit rules'
         },
@@ -1398,7 +1715,7 @@
 
     function detectPlatformInPrompt() {
         const text = elements.promptInput.value.toLowerCase();
-        const contentType = elements.contentType.value;
+        const contentType = getContentTypeKey();
 
         // Only detect for social media content types
         if (!contentType.startsWith('social')) {
@@ -1429,11 +1746,12 @@
         if (platform && PLATFORM_STYLES[platform]) {
             detectedPlatform = platform;
             const data = PLATFORM_STYLES[platform];
+            const svgIcon = PLATFORM_ICONS[platform] || PLATFORM_ICONS.x;
 
             elements.platformArtifacts.classList.remove('hidden');
             elements.platformInfo.innerHTML = `
                 <span class="platform-badge">
-                    <span class="platform-icon">${data.icon}</span>
+                    <span class="platform-icon">${svgIcon}</span>
                     ${data.name}
                 </span>
                 <span class="platform-hint">${data.maxLength ? `Max ${data.maxLength} chars` : 'No character limit'} • ${data.tone}</span>
@@ -1448,6 +1766,32 @@
         if (!detectedPlatform || !PLATFORM_STYLES[detectedPlatform]) return '';
 
         const platform = PLATFORM_STYLES[detectedPlatform];
+
+        // Build brevity instruction based on platform
+        let brevityInstruction = '';
+        if (platform.brevity === 'critical') {
+            brevityInstruction = `
+CRITICAL BREVITY REQUIREMENT:
+- This is an ultra-short format platform
+- Maximum 1-3 sentences TOTAL
+- Every word must earn its place
+- No introductions, no conclusions, no preambles
+- Jump straight to the point`;
+        } else if (platform.brevity === 'high') {
+            brevityInstruction = `
+BREVITY REQUIREMENT:
+- Keep it SHORT - aim for ${platform.maxLength ? Math.round(platform.maxLength / 5) + '-' + Math.round(platform.maxLength / 3) : '100-200'} words max
+- 3-5 short paragraphs maximum
+- No walls of text
+- One main idea per post
+- Cut ruthlessly - remove any sentence that doesn't add value`;
+        } else if (platform.brevity === 'medium') {
+            brevityInstruction = `
+BREVITY PREFERENCE:
+- Keep it concise
+- Aim for clarity over length`;
+        }
+
         return `
 
 ## Target Platform: ${platform.name}
@@ -1456,7 +1800,8 @@ Platform-specific guidelines:
 - Style: ${platform.style}
 - Tone: ${platform.tone}
 - Avoid: ${platform.avoid}
-${platform.maxLength ? `- Character limit: ${platform.maxLength} characters` : ''}
+${platform.maxLength ? `- Target length: Under ${platform.maxLength} characters` : ''}
+${brevityInstruction}
 
 Adapt the writing to fit this platform's culture and expectations while maintaining the user's authentic voice.`;
     }
@@ -1520,105 +1865,128 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         const profile = state.profile;
         let html = '';
 
-        // Summary
-        if (profile.profile_summary) {
-            html += `
-                <div class="profile-section">
-                    <h4>Profile Summary</h4>
-                    <p>${escapeHtml(profile.profile_summary)}</p>
-                </div>
-            `;
-        }
-
-        // Key metrics
+        // Header with metrics (matches profile step)
         html += `
-            <div class="profile-section">
-                <h4>Key Metrics</h4>
-                <div class="profile-metrics">
-                    <div class="metric"><span class="metric-label">Complexity Score:</span> ${profile.complexity_score || '—'}</div>
-                    <div class="metric"><span class="metric-label">Reading Level:</span> ${profile.reading_level || '—'}</div>
+            <div class="profile-header-modal">
+                <div class="profile-score-modal">
+                    <span class="profile-label">Writing Complexity</span>
+                    <span class="complexity-score">${profile.complexity_score || '—'}</span>
+                </div>
+                <div class="profile-meta-modal">
+                    <span class="reading-level">${profile.reading_level || '—'}</span>
                 </div>
             </div>
         `;
 
-        // Style
+        // Summary
+        if (profile.profile_summary) {
+            html += `<p class="profile-summary-modal">${escapeHtml(profile.profile_summary)}</p>`;
+        }
+
+        // Profile grid (matches profile step exactly)
+        html += '<div class="profile-grid-modal">';
+
+        // Style card
+        html += '<div class="profile-card-modal"><h4>Style</h4>';
         if (profile.style) {
             const styleTraits = [];
             if (profile.style.formality) styleTraits.push(UIRenderer.createBadge(profile.style.formality));
             if (profile.style.descriptiveness) styleTraits.push(UIRenderer.createBadge(profile.style.descriptiveness, 'neutral'));
             if (profile.style.directness) styleTraits.push(UIRenderer.createBadge(profile.style.directness, 'neutral'));
             if (profile.style.perspective) styleTraits.push(UIRenderer.createBadge(profile.style.perspective, 'neutral'));
-
-            html += `
-                <div class="profile-section">
-                    <h4>Writing Style</h4>
-                    <div class="trait-badges">${styleTraits.join('')}</div>
-                    ${profile.style.notable_traits ? `<p style="margin-top: 8px; font-size: 13px;"><strong>Notable traits:</strong> ${escapeHtml(profile.style.notable_traits.join(', '))}</p>` : ''}
-                </div>
-            `;
+            html += `<div class="trait-badges">${styleTraits.join('')}</div>`;
+            if (profile.style.summary) html += `<p>${escapeHtml(profile.style.summary)}</p>`;
+        } else {
+            html += '<p>No style data available.</p>';
         }
+        html += '</div>';
 
-        // Tone
+        // Tone card
+        html += '<div class="profile-card-modal"><h4>Tone & Voice</h4>';
         if (profile.tone) {
             const toneTraits = [];
             if (profile.tone.primary) toneTraits.push(UIRenderer.createBadge(profile.tone.primary));
-            if (profile.tone.secondary) toneTraits.push(UIRenderer.createBadge(profile.tone.secondary, 'neutral'));
-
-            html += `
-                <div class="profile-section">
-                    <h4>Tone</h4>
-                    <div class="trait-badges">${toneTraits.join('')}</div>
-                    ${profile.tone.emotional_range ? `<p style="margin-top: 8px; font-size: 13px;"><strong>Emotional range:</strong> ${escapeHtml(profile.tone.emotional_range)}</p>` : ''}
-                </div>
-            `;
-        }
-
-        // Vocabulary
-        if (profile.vocabulary) {
-            html += `
-                <div class="profile-section">
-                    <h4>Vocabulary</h4>
-                    <div class="trait-badges">
-                        ${profile.vocabulary.complexity ? UIRenderer.createBadge(profile.vocabulary.complexity + ' complexity', 'neutral') : ''}
-                        ${profile.vocabulary.jargon_usage ? UIRenderer.createBadge(profile.vocabulary.jargon_usage + ' jargon', 'neutral') : ''}
-                    </div>
-                    ${profile.vocabulary.preferred_words?.length ? `<p style="margin-top: 8px; font-size: 13px;"><strong>Preferred words:</strong> ${escapeHtml(profile.vocabulary.preferred_words.slice(0, 10).join(', '))}</p>` : ''}
-                </div>
-            `;
-        }
-
-        // Structure
-        if (profile.structure) {
-            html += `
-                <div class="profile-section">
-                    <h4>Structure</h4>
-                    <div class="trait-badges">
-                        ${profile.structure.sentence_length ? UIRenderer.createBadge(profile.structure.sentence_length + ' sentences', 'neutral') : ''}
-                        ${profile.structure.paragraph_length ? UIRenderer.createBadge(profile.structure.paragraph_length + ' paragraphs', 'neutral') : ''}
-                    </div>
-                    ${profile.structure.list_usage ? `<p style="margin-top: 8px; font-size: 13px;"><strong>List usage:</strong> ${escapeHtml(profile.structure.list_usage)}</p>` : ''}
-                </div>
-            `;
-        }
-
-        // Markers
-        if (profile.markers) {
-            const markers = [];
-            if (profile.markers.contractions) markers.push(`Contractions: ${profile.markers.contractions}`);
-            if (profile.markers.exclamations) markers.push(`Exclamations: ${profile.markers.exclamations}`);
-            if (profile.markers.questions) markers.push(`Questions: ${profile.markers.questions}`);
-            if (profile.markers.capitalization) markers.push(`Caps: ${profile.markers.capitalization}`);
-
-            if (markers.length) {
-                html += `
-                    <div class="profile-section">
-                        <h4>Writing Markers</h4>
-                        <p style="font-size: 13px;">${markers.join(' | ')}</p>
-                        ${profile.markers.signature_phrases?.length ? `<p style="font-size: 13px; margin-top: 8px;"><strong>Signature phrases:</strong> ${escapeHtml(profile.markers.signature_phrases.slice(0, 5).join(', '))}</p>` : ''}
-                    </div>
-                `;
+            if (profile.tone.secondary && Array.isArray(profile.tone.secondary)) {
+                profile.tone.secondary.forEach(t => toneTraits.push(UIRenderer.createBadge(t, 'neutral')));
+            } else if (profile.tone.secondary) {
+                toneTraits.push(UIRenderer.createBadge(profile.tone.secondary, 'neutral'));
             }
+            if (profile.tone.emotional_register) toneTraits.push(UIRenderer.createBadge(profile.tone.emotional_register, 'highlight'));
+            html += `<div class="trait-badges">${toneTraits.join('')}</div>`;
+            if (profile.tone.summary) html += `<p>${escapeHtml(profile.tone.summary)}</p>`;
+        } else {
+            html += '<p>No tone data available.</p>';
         }
+        html += '</div>';
+
+        // Vocabulary card
+        html += '<div class="profile-card-modal"><h4>Vocabulary</h4>';
+        if (profile.vocabulary) {
+            if (profile.vocabulary.complexity) {
+                html += `<div class="trait-badges">${UIRenderer.createBadge(profile.vocabulary.complexity)}</div>`;
+            }
+            if (profile.vocabulary.characteristic_words?.length) {
+                html += `<p style="font-size: 12px; color: #666; margin: 8px 0 4px;">Characteristic words:</p>`;
+                html += `<div class="trait-badges">${profile.vocabulary.characteristic_words.slice(0, 8).map(w => UIRenderer.createBadge(w, 'neutral')).join('')}</div>`;
+            }
+            if (profile.vocabulary.summary) html += `<p>${escapeHtml(profile.vocabulary.summary)}</p>`;
+        } else {
+            html += '<p>No vocabulary data available.</p>';
+        }
+        html += '</div>';
+
+        // Structure card
+        html += '<div class="profile-card-modal"><h4>Structure</h4>';
+        if (profile.structure) {
+            const structTraits = [];
+            if (profile.structure.sentence_length) structTraits.push(UIRenderer.createBadge(profile.structure.sentence_length + ' sentences', 'neutral'));
+            if (profile.structure.variety) structTraits.push(UIRenderer.createBadge(profile.structure.variety, 'neutral'));
+            if (structTraits.length) html += `<div class="trait-badges">${structTraits.join('')}</div>`;
+            if (profile.structure.paragraph_style) html += `<p style="font-size: 13px; color: #555;"><strong>Paragraphs:</strong> ${escapeHtml(profile.structure.paragraph_style)}</p>`;
+            if (profile.structure.summary) html += `<p>${escapeHtml(profile.structure.summary)}</p>`;
+        } else {
+            html += '<p>No structure data available.</p>';
+        }
+        html += '</div>';
+
+        html += '</div>'; // close profile-grid-modal
+
+        // Stylistic Markers section
+        html += '<div class="profile-section-modal"><h4>Stylistic Markers</h4>';
+        if (profile.markers && Array.isArray(profile.markers) && profile.markers.length) {
+            html += '<ul>';
+            profile.markers.forEach(m => {
+                html += `<li><strong>${escapeHtml(m.type || '')}:</strong> ${escapeHtml(m.description || '')}</li>`;
+            });
+            html += '</ul>';
+        } else if (profile.markers && typeof profile.markers === 'object') {
+            // Legacy format
+            const markers = [];
+            if (profile.markers.contractions) markers.push(`<li><strong>Contractions:</strong> ${escapeHtml(profile.markers.contractions)}</li>`);
+            if (profile.markers.exclamations) markers.push(`<li><strong>Exclamations:</strong> ${escapeHtml(profile.markers.exclamations)}</li>`);
+            if (profile.markers.questions) markers.push(`<li><strong>Questions:</strong> ${escapeHtml(profile.markers.questions)}</li>`);
+            if (profile.markers.capitalization) markers.push(`<li><strong>Capitalization:</strong> ${escapeHtml(profile.markers.capitalization)}</li>`);
+            if (profile.markers.signature_phrases?.length) {
+                markers.push(`<li><strong>Signature phrases:</strong> ${escapeHtml(profile.markers.signature_phrases.slice(0, 5).join(', '))}</li>`);
+            }
+            html += markers.length ? `<ul>${markers.join('')}</ul>` : '<p>No distinctive markers identified.</p>';
+        } else {
+            html += '<p>No distinctive markers identified.</p>';
+        }
+        html += '</div>';
+
+        // Patterns section
+        html += '<div class="profile-section-modal"><h4>Patterns to Replicate</h4>';
+        if (profile.patterns && Array.isArray(profile.patterns) && profile.patterns.length) {
+            html += '<ul>';
+            profile.patterns.forEach(p => {
+                html += `<li>${escapeHtml(p)}</li>`;
+            });
+            html += '</ul>';
+        } else {
+            html += '<p>No specific patterns identified.</p>';
+        }
+        html += '</div>';
 
         elements.fullProfileContent.innerHTML = html;
         showModal('full-profile-modal');
@@ -1640,11 +2008,13 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         if (urls.length === 0) {
             elements.urlArtifacts.classList.add('hidden');
             elements.urlArtifactsList.innerHTML = '';
+            state.extractedUrls = [];
             return;
         }
 
         // Remove duplicates
         const uniqueUrls = [...new Set(urls)];
+        state.extractedUrls = uniqueUrls;
 
         elements.urlArtifacts.classList.remove('hidden');
         elements.urlArtifactsList.innerHTML = uniqueUrls.map(url => `
@@ -1688,5 +2058,73 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         }
 
         return fetchedContent;
+    }
+
+    // --- URL Content Preview Modal ---
+
+    let currentEditingUrl = null;
+
+    function handleUrlArtifactClick(e) {
+        const item = e.target.closest('.url-artifact-item');
+        if (!item) return;
+
+        const url = item.dataset.url;
+        const statusEl = item.querySelector('.url-status');
+        const status = statusEl?.dataset.status || statusEl?.className.includes('success') ? 'success' : 'pending';
+
+        // Only show modal if we have content or it's been fetched
+        if (state.fetchedUrlContent[url] || status === 'success') {
+            showUrlContentModal(url);
+        } else if (status === 'pending') {
+            // Trigger fetch first, then show modal
+            fetchSingleUrlAndShowModal(url, item);
+        }
+    }
+
+    async function fetchSingleUrlAndShowModal(url, item) {
+        const statusEl = item.querySelector('.url-status');
+        statusEl.textContent = 'Fetching...';
+        statusEl.className = 'url-status loading';
+
+        try {
+            const content = await ApiClient.fetchUrlContent(url);
+            state.fetchedUrlContent[url] = content;
+            statusEl.textContent = `${Math.round(content.length / 1000)}KB`;
+            statusEl.className = 'url-status success';
+            showUrlContentModal(url);
+        } catch (err) {
+            statusEl.textContent = 'Failed';
+            statusEl.className = 'url-status error';
+            showToast('Failed to fetch URL content');
+            console.error('Failed to fetch URL:', url, err);
+        }
+    }
+
+    function showUrlContentModal(url) {
+        currentEditingUrl = url;
+        const content = state.fetchedUrlContent[url] || '';
+
+        elements.urlContentSourceLink.href = url;
+        elements.urlContentSourceLink.textContent = url;
+        elements.urlContentText.value = content;
+
+        showModal('url-content-modal');
+    }
+
+    function saveUrlContent() {
+        if (currentEditingUrl) {
+            state.fetchedUrlContent[currentEditingUrl] = elements.urlContentText.value;
+            
+            // Update the status display to show edited
+            const item = elements.urlArtifactsList.querySelector(`[data-url="${CSS.escape(currentEditingUrl)}"]`);
+            if (item) {
+                const statusEl = item.querySelector('.url-status');
+                const contentLength = elements.urlContentText.value.length;
+                statusEl.textContent = `${Math.round(contentLength / 1000)}KB (edited)`;
+            }
+            
+            showToast('Content saved');
+        }
+        hideModal('url-content-modal');
     }
 })();

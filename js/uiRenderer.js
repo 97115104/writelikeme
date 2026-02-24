@@ -163,36 +163,74 @@ const UIRenderer = (() => {
         });
     }
 
-    function renderSlopCheck(issues, container) {
+    function renderSlopCheck(slopResults, container) {
         const slopSection = document.getElementById('slop-check');
+        
+        // Handle both old array format and new object format
+        const issues = Array.isArray(slopResults) ? slopResults : (slopResults?.issues || []);
+        const slopScore = slopResults?.slopScore ?? (issues.length === 0 ? 0 : 50);
+        const summary = slopResults?.summary || {};
 
         if (issues.length === 0) {
             slopSection.classList.add('clean');
             slopSection.classList.remove('hidden');
-            container.innerHTML = '<p>No AI writing patterns detected. The text appears natural and authentic.</p>';
+            container.innerHTML = `
+                <div class="slop-success">
+                    <span class="slop-score-badge excellent">Score: ${slopScore}</span>
+                    <p>No AI writing patterns detected. The text appears natural and authentic.</p>
+                </div>
+            `;
             return;
         }
 
         slopSection.classList.remove('clean', 'hidden');
 
-        const highSeverity = issues.filter(i => i.severity === 'high');
-        const mediumSeverity = issues.filter(i => i.severity === 'medium');
+        const criticalIssues = issues.filter(i => i.severity === 'critical');
+        const highIssues = issues.filter(i => i.severity === 'high');
+        const mediumIssues = issues.filter(i => i.severity === 'medium');
+        const lowIssues = issues.filter(i => i.severity === 'low');
 
-        let html = '<p>Some AI patterns were detected:</p><ul>';
+        // Determine score class
+        let scoreClass = 'excellent';
+        if (slopScore > 60) scoreClass = 'poor';
+        else if (slopScore > 30) scoreClass = 'fair';
+        else if (slopScore > 10) scoreClass = 'good';
 
-        issues.forEach(issue => {
-            const severityLabel = issue.severity === 'high' ? '⚠️' : (issue.severity === 'medium' ? '⚡' : '💡');
-            html += `<li>${severityLabel} <strong>${escapeHtml(issue.type)}</strong> (${issue.count} found)`;
-            if (issue.examples && issue.examples.length > 0) {
-                html += `: "${escapeHtml(issue.examples[0])}"`;
-            }
-            html += '</li>';
-        });
+        let html = `<div class="slop-header">
+            <span class="slop-score-badge ${scoreClass}">Quality Score: ${100 - slopScore}/100</span>
+            <span class="slop-summary">${criticalIssues.length + highIssues.length} issues need attention</span>
+        </div>`;
 
-        html += '</ul>';
+        // Critical issues (must fix)
+        if (criticalIssues.length > 0) {
+            html += '<div class="slop-category critical"><h5>Critical Issues</h5><ul>';
+            criticalIssues.forEach(issue => {
+                html += `<li><strong>${escapeHtml(issue.type)}</strong>`;
+                if (issue.examples?.[0]) html += `: <code>${escapeHtml(issue.examples[0].substring(0, 50))}</code>`;
+                html += '</li>';
+            });
+            html += '</ul></div>';
+        }
 
-        if (highSeverity.length > 0) {
-            html += '<p style="margin-top: 8px; font-size: 12px; color: #e65100;">Consider regenerating or manually editing to remove high-severity patterns.</p>';
+        // High severity issues
+        if (highIssues.length > 0) {
+            html += '<div class="slop-category high"><h5>High Priority</h5><ul>';
+            highIssues.slice(0, 5).forEach(issue => {
+                html += `<li><strong>${escapeHtml(issue.type)}</strong>`;
+                if (issue.examples?.[0]) html += `: <code>${escapeHtml(issue.examples[0].substring(0, 40))}</code>`;
+                html += '</li>';
+            });
+            if (highIssues.length > 5) html += `<li><em>+${highIssues.length - 5} more...</em></li>`;
+            html += '</ul></div>';
+        }
+
+        // Medium/low summary
+        if (mediumIssues.length + lowIssues.length > 0) {
+            html += `<p class="slop-minor">${mediumIssues.length} medium + ${lowIssues.length} minor patterns detected (less critical)</p>`;
+        }
+
+        if (criticalIssues.length > 0 || highIssues.length > 2) {
+            html += '<p class="slop-advice">Consider regenerating or manually editing to improve authenticity.</p>';
         }
 
         container.innerHTML = html;
@@ -216,6 +254,23 @@ const UIRenderer = (() => {
         errorSection.classList.add('hidden');
     }
 
+    function showToast(message, duration = 3000) {
+        // Remove existing toast if any
+        const existingToast = document.querySelector('.toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, duration);
+    }
+
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -229,6 +284,7 @@ const UIRenderer = (() => {
         showLoading,
         showError,
         hideError,
+        showToast,
         createBadge
     };
 })();
