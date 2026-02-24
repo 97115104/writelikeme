@@ -441,11 +441,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
     margin-bottom: 12px;
 }
 
 .output-header h4 {
     margin: 0;
+    flex-shrink: 0;
 }
 
 .btn-toggle-output {
@@ -510,6 +512,131 @@
     color: #9e9e9e;
     margin: 4px 0 8px;
     text-align: right;
+}
+
+/* Edit Indicator */
+.edit-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: #fff8e1;
+    border: 1px solid #ffcc80;
+    border-radius: 6px;
+}
+
+.edit-indicator-text {
+    flex: 1;
+    font-size: 12px;
+    color: #e65100;
+    font-weight: 500;
+}
+
+.btn-save-edits {
+    background: #4caf50;
+    color: white;
+    border-color: #43a047;
+}
+
+.btn-save-edits:hover {
+    background: #43a047;
+}
+
+.btn-discard-edits {
+    background: transparent;
+    color: #757575;
+    border-color: #bdbdbd;
+}
+
+.btn-discard-edits:hover {
+    background: #f5f5f5;
+    color: #616161;
+}
+
+/* Regenerate Confirmation Modal */
+.regenerate-changes-list {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+}
+
+.regenerate-changes-list li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.change-label {
+    font-weight: 600;
+    color: #555;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.change-text {
+    color: #333;
+    font-size: 13px;
+}
+
+.change-impact {
+    font-size: 11px;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+.regenerate-confirm-note {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 12px;
+    margin-bottom: 0;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 12px 20px 16px;
+    border-top: 1px solid #eee;
+}
+
+.modal-footer .btn-primary,
+.modal-footer .btn-secondary {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    width: auto;
+}
+
+.modal-footer .btn-secondary {
+    background: transparent;
+    border: 1px solid #ddd;
+    color: #666;
+}
+
+.modal-footer .btn-secondary:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+.modal-footer .btn-primary {
+    background: #4caf50;
+    border: 1px solid #43a047;
+    color: white;
+}
+
+.modal-footer .btn-primary:hover {
+    background: #43a047;
 }
 
 /* Slop Check */
@@ -1098,9 +1225,59 @@
     display: flex;
     gap: 10px;
     justify-content: flex-end;
-    padding-top: 16px;
+    padding-top: 14px;
     border-top: 1px solid #eee;
-    margin-top: 16px;
+    margin-top: 14px;
+}
+
+.style-studio-footer .btn-primary,
+.style-studio-footer .btn-secondary {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    width: auto;
+}
+
+.style-studio-footer .btn-secondary {
+    background: transparent;
+    border: 1px solid #ddd;
+    color: #666;
+}
+
+.style-studio-footer .btn-secondary:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+.style-studio-footer .btn-primary {
+    background: #4caf50;
+    border: 1px solid #43a047;
+    color: white;
+}
+
+.style-studio-footer .btn-primary:hover {
+    background: #43a047;
+}
+
+/* Mobile adjustments for modal footers */
+@media (max-width: 360px) {
+    .style-studio-footer {
+        flex-direction: column;
+    }
+    
+    .style-studio-footer button {
+        width: 100%;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .modal-footer button {
+        width: 100%;
+    }
 }
 
 /* Style Preview Section */
@@ -1336,7 +1513,20 @@
 
 /* Modal Variations */
 .modal-small {
-    max-width: 420px;
+    max-width: 400px;
+}
+
+.modal-small .modal-body {
+    padding: 16px 20px;
+}
+
+.modal-small .modal-body p {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.modal-small .modal-footer {
+    padding: 12px 20px 16px;
 }
 
 .modal-medium {
@@ -1356,12 +1546,11 @@
 /* Quality Tip on Input Step */
 .quality-tip {
     background: #f5f5f5;
-    border-left: 3px solid #2e7d32;
     padding: 10px 14px;
     font-size: 13px;
     color: #555;
     margin-bottom: 16px;
-    border-radius: 0 4px 4px 0;
+    border-radius: 4px;
 }
 
 .quality-tip strong {
@@ -2089,3 +2278,185 @@
     }
 }
 
+/* Revision History Button */
+.btn-revision-history {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    margin-right: 8px;
+}
+
+.btn-revision-history:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.btn-revision-history svg {
+    transition: transform 0.2s ease;
+}
+
+.btn-revision-history:hover svg {
+    transform: rotate(-30deg);
+}
+
+/* Revision History List */
+.revision-history-intro {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.revision-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.revision-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fafafa;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.revision-item:hover {
+    border-color: #bbdefb;
+    background: #f5f9ff;
+}
+
+.revision-item.current {
+    border-color: #4caf50;
+    background: #e8f5e9;
+}
+
+.revision-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.revision-time {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+}
+
+.revision-item.current .revision-time {
+    color: #2e7d32;
+}
+
+.revision-words {
+    font-size: 11px;
+    color: #999;
+}
+
+.revision-preview {
+    font-size: 13px;
+    color: #444;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    word-break: break-word;
+}
+
+.revision-styles {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+.revision-item .btn-restore {
+    margin-top: 4px;
+}
+
+/* Modal Size Consistency */
+@media (min-width: 481px) {
+    .modal-small {
+        width: 420px;
+        max-width: 90vw;
+    }
+}
+
+@media (max-width: 480px) {
+    .revision-history-list {
+        max-height: 300px;
+    }
+    
+    .revision-item {
+        padding: 10px;
+    }
+}
+/* Feedback Modal */
+.feedback-modal-intro {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.feedback-modal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.feedback-modal-item {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.feedback-modal-item.latest {
+    background: #e3f2fd;
+}
+
+.feedback-modal-text {
+    font-size: 14px;
+    color: #333;
+    font-style: italic;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.feedback-modal-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+}
+
+.feedback-modal-meta .feedback-time {
+    color: #888;
+}
+
+.feedback-modal-meta .feedback-styles {
+    color: #666;
+}
+
+.feedback-modal-meta .feedback-change {
+    font-weight: 500;
+}
+
+.feedback-modal-meta .feedback-change.positive {
+    color: #2e7d32;
+}
+
+.feedback-modal-meta .feedback-change.negative {
+    color: #c62828;
+}
+
+.no-feedback {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}

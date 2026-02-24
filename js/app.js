@@ -12,8 +12,14 @@
         styleFeedback: '', // Custom style feedback from studio
         appliedStyleFeedback: '', // Feedback used for last generation
         feedbackHistory: [], // Track all feedback with timestamps: [{text, timestamp, appliedStyles}]
+        originalGeneratedContent: '', // Original content from generation (for diff tracking)
+        editedContent: '', // User's edited version of content
+        hasUnsavedEdits: false, // Track if user has edited content
         profStyleChecked: false, // Track if professional style modal was shown for current prompt
-        profStyleOverride: null // Professional style overrides from modal
+        profStyleOverride: null, // Professional style overrides from modal
+        revisionHistory: [], // Array of {content, timestamp, styles, prompt} for result history
+        currentRevisionIndex: -1, // Current position in revision history (-1 = not viewing history)
+        hasGeneratedOnce: false // Track if user has generated at least once
     };
 
     // DOM Elements
@@ -120,6 +126,9 @@
         elements.outputBody = document.getElementById('output-body');
         elements.btnToggleOutput = document.getElementById('btn-toggle-output');
         elements.generatedContent = document.getElementById('generated-content');
+        elements.editIndicator = document.getElementById('edit-indicator');
+        elements.btnSaveEdits = document.getElementById('btn-save-edits');
+        elements.btnDiscardEdits = document.getElementById('btn-discard-edits');
         elements.btnCopyOutput = document.getElementById('btn-copy-output');
         elements.btnRegenerate = document.getElementById('btn-regenerate');
         elements.btnViewFeedback = document.getElementById('btn-view-feedback');
@@ -151,6 +160,7 @@
         elements.styleStudioList = document.getElementById('style-studio-list');
         elements.styleFeedback = document.getElementById('style-feedback');
         elements.btnStyleStudioCancel = document.getElementById('btn-style-studio-cancel');
+        elements.btnStyleStudioSave = document.getElementById('btn-style-studio-save');
         elements.btnStyleStudioApply = document.getElementById('btn-style-studio-apply');
         elements.btnStyleStudioRegenerate = document.getElementById('btn-style-studio-regenerate');
         elements.stylePreviewSection = document.getElementById('style-preview-section');
@@ -158,6 +168,24 @@
         elements.feedbackHistorySection = document.getElementById('feedback-history-section');
         elements.feedbackHistoryList = document.getElementById('feedback-history-list');
         elements.feedbackCount = document.getElementById('feedback-count');
+
+        // Regenerate confirmation modal
+        elements.regenerateConfirmModal = document.getElementById('regenerate-confirm-modal');
+        elements.btnCloseRegenerateConfirm = document.getElementById('btn-close-regenerate-confirm');
+        elements.regenerateChangesList = document.getElementById('regenerate-changes-list');
+        elements.btnRegenerateEditMore = document.getElementById('btn-regenerate-edit-more');
+        elements.btnRegenerateConfirm = document.getElementById('btn-regenerate-confirm');
+
+        // Revision history
+        elements.btnRevisionHistory = document.getElementById('btn-revision-history');
+        elements.revisionHistoryModal = document.getElementById('revision-history-modal');
+        elements.btnCloseRevisionHistory = document.getElementById('btn-close-revision-history');
+        elements.revisionHistoryList = document.getElementById('revision-history-list');
+
+        // Feedback modal
+        elements.feedbackModal = document.getElementById('feedback-modal');
+        elements.btnCloseFeedbackModal = document.getElementById('btn-close-feedback-modal');
+        elements.feedbackModalList = document.getElementById('feedback-modal-list');
 
         // Platform artifacts
         elements.platformArtifacts = document.getElementById('platform-artifacts');
@@ -323,12 +351,28 @@
         elements.btnCloseStorageOk?.addEventListener('click', () => hideModal('storage-saved-modal'));
 
         // Generate step
-        elements.btnGenerate.addEventListener('click', generateContent);
-        elements.btnRegenerate.addEventListener('click', generateContent);
+        elements.btnGenerate.addEventListener('click', handleGenerateClick);
+        elements.btnRegenerate.addEventListener('click', handleRegenerateClick);
         elements.btnCopyOutput.addEventListener('click', copyOutput);
+        elements.btnSaveEdits?.addEventListener('click', saveContentEdits);
         elements.btnEditStyle?.addEventListener('click', openStyleStudio);
-        elements.btnViewFeedback?.addEventListener('click', openStyleStudio); // Opens style studio which shows feedback history
+        elements.btnViewFeedback?.addEventListener('click', openFeedbackModal);
         elements.btnBackProfile.addEventListener('click', () => goToStep('profile'));
+        
+        // Revision history
+        elements.btnRevisionHistory?.addEventListener('click', openRevisionHistory);
+        elements.btnCloseRevisionHistory?.addEventListener('click', () => hideModal('revision-history-modal'));
+        elements.revisionHistoryList?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-restore');
+            if (btn) {
+                const item = btn.closest('.revision-item');
+                const index = parseInt(item?.dataset.index, 10);
+                if (!isNaN(index)) handleRevisionSelect(index);
+            }
+        });
+        
+        // Content edit tracking
+        elements.generatedContent?.addEventListener('input', handleContentEdit);
 
         // Content type category and tone selection
         elements.contentCategory?.addEventListener('change', handleContentCategoryChange);
@@ -353,6 +397,7 @@
             
             detectPlatformInPrompt();
             updateStyleSuggestions();
+            autoSelectEmojiStyle();
             state.profStyleChecked = false; // Reset on prompt change
             
             // Handle output collapse when prompt is cleared after generating
@@ -377,9 +422,44 @@
         // Style Studio modal
         elements.btnCloseStyleStudio?.addEventListener('click', () => hideModal('style-studio-modal'));
         elements.btnStyleStudioCancel?.addEventListener('click', () => hideModal('style-studio-modal'));
+        elements.btnStyleStudioSave?.addEventListener('click', saveStylesAndContinue);
         elements.btnStyleStudioApply?.addEventListener('click', applyStyleStudio);
         elements.btnStyleStudioRegenerate?.addEventListener('click', regenerateWithStyles);
         elements.styleStudioList?.addEventListener('click', handleStyleStudioItemClick);
+
+        // Regenerate confirmation modal
+        elements.btnCloseRegenerateConfirm?.addEventListener('click', () => hideModal('regenerate-confirm-modal'));
+        elements.btnRegenerateEditMore?.addEventListener('click', () => {
+            hideModal('regenerate-confirm-modal');
+            openStyleStudio();
+        });
+        elements.btnRegenerateConfirm?.addEventListener('click', () => {
+            hideModal('regenerate-confirm-modal');
+            // Save any unsaved edits as feedback before regenerating
+            if (state.hasUnsavedEdits) {
+                saveContentEdits();
+            }
+            generateContent();
+        });
+        
+        // Revision history modal
+        elements.btnCloseRevisionHistory?.addEventListener('click', () => hideModal('revision-history-modal'));
+        elements.revisionHistoryList?.addEventListener('click', (e) => {
+            const restoreBtn = e.target.closest('.btn-restore');
+            if (restoreBtn) {
+                const item = restoreBtn.closest('.revision-item');
+                if (item) {
+                    const index = parseInt(item.dataset.index, 10);
+                    handleRevisionSelect(index);
+                }
+            }
+        });
+        
+        // Feedback modal
+        elements.btnCloseFeedbackModal?.addEventListener('click', () => hideModal('feedback-modal'));
+        
+        // Edit controls
+        elements.btnDiscardEdits?.addEventListener('click', discardContentEdits);
 
         // Save profile modal
         elements.btnCloseSaveProfile?.addEventListener('click', () => hideModal('save-profile-modal'));
@@ -538,8 +618,44 @@
             elements.toneSelector?.classList.add('hidden');
         }
         
+        // Auto-add emoji style for personal text/email with emotional content
+        autoSelectEmojiStyle();
+        
         // Re-detect platform when category changes
         detectPlatformInPrompt();
+    }
+    
+    function autoSelectEmojiStyle() {
+        const category = elements.contentCategory?.value;
+        const tone = elements.contentTone?.value;
+        const promptText = elements.promptInput?.value.toLowerCase() || '';
+        
+        // Check if personal text/chat or personal email category
+        const isPersonalMessaging = category === 'text' && (tone === 'personal' || tone === 'chat');
+        const isPersonalEmail = category === 'email' && tone === 'personal';
+        
+        if (isPersonalMessaging || isPersonalEmail) {
+            // Check for emotional keywords
+            const emotionalKeywords = ['love', 'miss', 'heart', 'happy', 'sad', 'excited', 'congrats', 'congratulations', 
+                'thank', 'sorry', 'support', 'proud', 'amazing', 'celebrate', 'birthday', 'anniversary', 'hug', 
+                'feel', 'feeling', 'emotional', 'care', 'caring'];
+            const hasEmotion = emotionalKeywords.some(kw => promptText.includes(kw));
+            
+            if (hasEmotion) {
+                let updated = false;
+                if (!state.selectedStyleTags.includes('emoji')) {
+                    state.selectedStyleTags.push('emoji');
+                    updated = true;
+                }
+                if (!state.selectedStyleTags.includes('conversational')) {
+                    state.selectedStyleTags.push('conversational');
+                    updated = true;
+                }
+                if (updated) {
+                    updateStyleSuggestions();
+                }
+            }
+        }
     }
 
     function getContentTypeKey() {
@@ -1164,6 +1280,17 @@
             // Display result
             elements.generatedContent.textContent = content;
             
+            // Store original for diff tracking
+            state.originalGeneratedContent = content;
+            state.editedContent = '';
+            state.hasUnsavedEdits = false;
+            state.hasGeneratedOnce = true;
+            state.currentRevisionIndex = -1; // Reset to "not viewing history"
+            updateEditIndicator();
+            
+            // Save to revision history
+            saveToRevisionHistory(content);
+            
             // Store for sharing
             state.generatedContent = content;
             state.lastDetectedPlatform = detectedPlatform;
@@ -1238,6 +1365,197 @@
         } catch {
             UIRenderer.showError('Failed to copy to clipboard.');
         }
+    }
+
+    // --- Content Edit Tracking ---
+
+    function handleContentEdit() {
+        const currentContent = elements.generatedContent.innerText;
+        const hasChanged = currentContent !== state.originalGeneratedContent;
+        
+        if (hasChanged && !state.hasUnsavedEdits) {
+            state.hasUnsavedEdits = true;
+            state.editedContent = currentContent;
+            updateEditIndicator();
+        } else if (hasChanged) {
+            state.editedContent = currentContent;
+        } else if (!hasChanged && state.hasUnsavedEdits) {
+            // User reverted to original
+            state.hasUnsavedEdits = false;
+            state.editedContent = '';
+            updateEditIndicator();
+        }
+    }
+
+    function updateEditIndicator() {
+        if (!elements.editIndicator) return;
+        
+        if (state.hasUnsavedEdits) {
+            elements.editIndicator.classList.remove('hidden');
+        } else {
+            elements.editIndicator.classList.add('hidden');
+        }
+    }
+
+    function saveContentEdits() {
+        if (!state.hasUnsavedEdits) return;
+        
+        // Calculate edit summary for feedback
+        const original = state.originalGeneratedContent;
+        const edited = state.editedContent;
+        const editSummary = generateEditSummary(original, edited);
+        
+        // Add as implicit feedback
+        if (editSummary) {
+            addFeedbackToHistory(`[User edits] ${editSummary}`);
+        }
+        
+        // Update original to the saved version
+        state.originalGeneratedContent = edited;
+        state.editedContent = '';
+        state.hasUnsavedEdits = false;
+        state.generatedContent = edited; // Update for sharing
+        updateEditIndicator();
+        updateViewFeedbackButton();
+        
+        // Show confirmation
+        elements.btnSaveEdits.textContent = 'Saved!';
+        setTimeout(() => {
+            elements.btnSaveEdits.textContent = 'Save Edits';
+        }, 1500);
+    }
+
+    function discardContentEdits() {
+        if (!state.hasUnsavedEdits) return;
+        
+        // Restore original content
+        elements.generatedContent.textContent = state.originalGeneratedContent;
+        state.editedContent = '';
+        state.hasUnsavedEdits = false;
+        updateEditIndicator();
+    }
+
+    function generateEditSummary(original, edited) {
+        const originalWords = original.split(/\s+/).filter(w => w);
+        const editedWords = edited.split(/\s+/).filter(w => w);
+        
+        const wordDiff = editedWords.length - originalWords.length;
+        const charDiff = edited.length - original.length;
+        
+        const parts = [];
+        
+        if (wordDiff > 0) {
+            parts.push(`added ${wordDiff} words`);
+        } else if (wordDiff < 0) {
+            parts.push(`removed ${Math.abs(wordDiff)} words`);
+        }
+        
+        if (charDiff > 0) {
+            parts.push(`expanded by ${charDiff} characters`);
+        } else if (charDiff < 0) {
+            parts.push(`shortened by ${Math.abs(charDiff)} characters`);
+        }
+        
+        // Check for structural changes
+        const originalParagraphs = original.split(/\n\n+/).length;
+        const editedParagraphs = edited.split(/\n\n+/).length;
+        if (editedParagraphs !== originalParagraphs) {
+            parts.push(`restructured paragraphs (${originalParagraphs} → ${editedParagraphs})`);
+        }
+        
+        return parts.length > 0 ? parts.join(', ') : 'minor edits';
+    }
+
+    function handleGenerateClick() {
+        // Only show confirmation modal if:
+        // 1. We've already generated once, AND
+        // 2. There are edits, feedback, or style changes to apply
+        if (state.hasGeneratedOnce) {
+            const hasEdits = state.hasUnsavedEdits;
+            const hasFeedback = state.feedbackHistory.length > 0;
+            const hasUnsavedFeedback = elements.styleFeedback?.value.trim();
+            const hasStyleChanges = state.selectedStyleTags.length > 0 && 
+                JSON.stringify(state.selectedStyleTags) !== JSON.stringify(state.appliedStyleTags);
+            
+            if (hasEdits || hasFeedback || hasUnsavedFeedback || hasStyleChanges) {
+                showRegenerateConfirmation();
+                return;
+            }
+        }
+        
+        generateContent();
+    }
+
+    function handleRegenerateClick() {
+        // Check if there are any changes that warrant a confirmation
+        const hasStyleChanges = state.selectedStyleTags.length > 0 || 
+            (state.appliedStyleTags.length > 0 && 
+             JSON.stringify(state.selectedStyleTags) !== JSON.stringify(state.appliedStyleTags));
+        const hasFeedback = state.feedbackHistory.length > 0;
+        const hasEdits = state.hasUnsavedEdits;
+        const hasUnsavedFeedback = elements.styleFeedback?.value.trim();
+        
+        if (hasStyleChanges || hasFeedback || hasEdits || hasUnsavedFeedback) {
+            showRegenerateConfirmation();
+        } else {
+            generateContent();
+        }
+    }
+
+    function showRegenerateConfirmation() {
+        const changes = [];
+        
+        if (state.feedbackHistory.length > 0) {
+            const impactPct = Math.min(state.feedbackHistory.length * 15, 60);
+            changes.push({
+                label: 'Feedback',
+                text: `${state.feedbackHistory.length} note${state.feedbackHistory.length > 1 ? 's' : ''} guiding output`,
+                impact: `+${impactPct}% accuracy`
+            });
+        }
+        
+        if (state.hasUnsavedEdits) {
+            const editSummary = generateEditSummary(state.originalGeneratedContent, state.editedContent);
+            changes.push({
+                label: 'Your edits',
+                text: editSummary,
+                impact: '+25% relevance'
+            });
+        }
+        
+        if (state.selectedStyleTags.length > 0) {
+            const styleLabels = state.selectedStyleTags
+                .map(s => STYLE_BUILDER[s]?.label || s)
+                .join(', ');
+            const tonePct = state.selectedStyleTags.length * 12;
+            changes.push({
+                label: 'Style',
+                text: styleLabels,
+                impact: `+${tonePct}% tone match`
+            });
+        }
+        
+        if (elements.styleFeedback?.value.trim()) {
+            const feedbackText = elements.styleFeedback.value.trim();
+            changes.push({
+                label: 'New guidance',
+                text: `"${feedbackText.substring(0, 50)}${feedbackText.length > 50 ? '...' : ''}"`,
+                impact: '+20% direction'
+            });
+        }
+        
+        // Build the changes list HTML
+        if (elements.regenerateChangesList) {
+            elements.regenerateChangesList.innerHTML = changes.map(c => 
+                `<li>
+                    <span class="change-label">${c.label}</span>
+                    <span class="change-text">${c.text}</span>
+                    <span class="change-impact">${c.impact}</span>
+                </li>`
+            ).join('');
+        }
+        
+        showModal('regenerate-confirm-modal');
     }
 
     // --- Sharing Functions ---
@@ -2407,6 +2725,13 @@ Adapt the writing to fit this platform's culture and expectations while maintain
             sentiment: 'positive',
             category: 'tone'
         },
+        conversational: {
+            label: 'Conversational',
+            description: 'Write naturally as if speaking to a friend. Less polished, more human - include filler words, contractions, and natural rhythm.',
+            keywords: ['natural', 'like talking', 'speaking', 'chat', 'real', 'authentic', 'genuine', 'not formal', 'relaxed'],
+            sentiment: 'positive',
+            category: 'tone'
+        },
         formal: {
             label: 'Professional',
             description: 'Maintain professional language, proper grammar, and a respectful tone appropriate for business contexts.',
@@ -2529,6 +2854,13 @@ Adapt the writing to fit this platform's culture and expectations while maintain
             keywords: ['detailed', 'thorough', 'comprehensive', 'in-depth', 'complete', 'full', 'extensive', 'elaborate'],
             sentiment: 'neutral',
             category: 'format'
+        },
+        emoji: {
+            label: 'Emoji',
+            description: 'Include appropriate emojis to add warmth and emotional expression.',
+            keywords: ['emoji', 'emojis', 'text', 'texting', 'message', 'dm', 'personal email', 'heart', 'smiley', '❤️', '😊', '🙏', '💕', '🎉'],
+            sentiment: 'positive',
+            category: 'format'
         }
     };
 
@@ -2631,6 +2963,18 @@ Adapt the writing to fit this platform's culture and expectations while maintain
     // --- Style Sketch Studio ---
 
     function openStyleStudio() {
+        // Auto-select detected styles from prompt if not already selected
+        const text = elements.promptInput?.value.toLowerCase() || '';
+        if (text.length >= 5) {
+            for (const [style, keywords] of Object.entries(STYLE_KEYWORDS)) {
+                if (keywords.some(kw => text.includes(kw))) {
+                    if (!state.selectedStyleTags.includes(style)) {
+                        state.selectedStyleTags.push(style);
+                    }
+                }
+            }
+        }
+        
         // Render all style options
         renderStyleStudioOptions();
         
@@ -2653,9 +2997,9 @@ Adapt the writing to fit this platform's culture and expectations while maintain
     function renderStyleStudioOptions() {
         const categories = {
             'Audience & Complexity': ['accessible', 'technical'],
-            'Tone & Register': ['informal', 'formal', 'somber', 'empathetic', 'upbeat', 'humorous', 'kind', 'warm', 'understanding', 'compassionate', 'reassuring', 'encouraging'],
+            'Tone & Register': ['informal', 'conversational', 'formal', 'somber', 'empathetic', 'upbeat', 'humorous', 'kind', 'warm', 'understanding', 'compassionate', 'reassuring', 'encouraging'],
             'Purpose & Approach': ['persuasive', 'educational', 'storytelling', 'analytical'],
-            'Length & Format': ['concise', 'detailed']
+            'Length & Format': ['concise', 'detailed', 'emoji']
         };
 
         let html = '';
@@ -2865,6 +3209,27 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         renderStyleStudioOptions();
     }
 
+    function saveStylesAndContinue() {
+        const newFeedback = elements.styleFeedback.value.trim();
+        
+        // Track feedback if it's new
+        if (newFeedback && newFeedback !== state.styleFeedback) {
+            addFeedbackToHistory(newFeedback);
+        }
+        
+        state.styleFeedback = newFeedback;
+        
+        // Clear the feedback textarea since it's now saved
+        elements.styleFeedback.value = '';
+        
+        // Re-render to show the saved feedback in history
+        renderFeedbackHistory();
+        updateStyleStudioButtons();
+        updateViewFeedbackButton();
+        
+        // Don't close modal - user continues editing
+    }
+
     function applyStyleStudio() {
         const newFeedback = elements.styleFeedback.value.trim();
         
@@ -2874,6 +3239,11 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         }
         
         state.styleFeedback = newFeedback;
+        
+        // Clear the feedback textarea since it's now saved
+        elements.styleFeedback.value = '';
+        state.styleFeedback = '';
+        
         hideModal('style-studio-modal');
         updateStyleSuggestions();
         updateViewFeedbackButton();
@@ -2891,6 +3261,11 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         // Store what's being applied for diff tracking
         state.appliedStyleTags = [...state.selectedStyleTags];
         state.appliedStyleFeedback = state.styleFeedback;
+        
+        // Clear the feedback textarea since it's now applied
+        elements.styleFeedback.value = '';
+        state.styleFeedback = '';
+        
         hideModal('style-studio-modal');
         updateStyleSuggestions();
         updateViewFeedbackButton();
@@ -2962,6 +3337,137 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         return `${Math.floor(seconds / 86400)}d ago`;
     }
     
+    // --- Revision History Functions ---
+    
+    function saveToRevisionHistory(content) {
+        // Don't save if content is identical to most recent revision
+        if (state.revisionHistory.length > 0 && state.revisionHistory[0].content === content) {
+            return;
+        }
+        
+        // Save current content to revision history
+        const entry = {
+            content: content,
+            timestamp: Date.now(),
+            styles: [...state.appliedStyleTags],
+            prompt: elements.promptInput?.value || '',
+            contentType: elements.contentCategory?.value || ''
+        };
+        
+        // Add to beginning for most recent first
+        state.revisionHistory.unshift(entry);
+        
+        // Limit to 20 revisions
+        if (state.revisionHistory.length > 20) {
+            state.revisionHistory.pop();
+        }
+        
+        // Reset index since positions shifted
+        state.currentRevisionIndex = -1;
+        
+        updateRevisionHistoryButton();
+    }
+    
+    function updateRevisionHistoryButton() {
+        const btn = elements.btnRevisionHistory;
+        if (!btn) return;
+        
+        if (state.revisionHistory.length >= 1) {
+            btn.classList.remove('hidden');
+            btn.title = `${state.revisionHistory.length} version${state.revisionHistory.length !== 1 ? 's' : ''}`;
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+    
+    function openRevisionHistory() {
+        if (state.revisionHistory.length === 0) return;
+        
+        renderRevisionHistoryList();
+        showModal('revision-history-modal');
+    }
+    
+    function renderRevisionHistoryList() {
+        if (!elements.revisionHistoryList) return;
+        
+        // Determine which revision is currently being viewed
+        const currentIdx = state.currentRevisionIndex >= 0 ? state.currentRevisionIndex : 0;
+        
+        let html = '';
+        state.revisionHistory.forEach((entry, idx) => {
+            const timeAgo = getTimeAgo(entry.timestamp);
+            const preview = entry.content.substring(0, 100) + (entry.content.length > 100 ? '...' : '');
+            const wordCount = entry.content.split(/\s+/).length;
+            const styleLabels = entry.styles.map(s => STYLE_BUILDER[s]?.label || s).join(', ');
+            const isCurrent = idx === currentIdx;
+            const isLatest = idx === 0;
+            
+            html += `
+                <div class="revision-item ${isCurrent ? 'current' : ''}" data-index="${idx}">
+                    <div class="revision-header">
+                        <span class="revision-time">${isLatest ? 'Latest' : timeAgo}${isCurrent ? ' (viewing)' : ''}</span>
+                        <span class="revision-words">${wordCount} words</span>
+                    </div>
+                    <div class="revision-preview">${escapeHtml(preview)}</div>
+                    ${styleLabels ? `<div class="revision-styles">${styleLabels}</div>` : ''}
+                    ${!isCurrent ? '<button class="btn-small btn-restore">Restore</button>' : ''}
+                </div>
+            `;
+        });
+        
+        elements.revisionHistoryList.innerHTML = html;
+    }
+    
+    function handleRevisionSelect(index) {
+        if (index < 0 || index >= state.revisionHistory.length) return;
+        
+        const currentContent = elements.generatedContent?.innerText || '';
+        
+        // Only save current content if:
+        // 1. We're NOT already viewing a history item (currentRevisionIndex === -1), OR
+        // 2. We ARE viewing history but made EDITS to it (content differs from that revision)
+        if (state.currentRevisionIndex === -1) {
+            // We're viewing fresh generated content - save it if different from history[0]
+            if (currentContent && (state.revisionHistory.length === 0 || currentContent !== state.revisionHistory[0].content)) {
+                saveToRevisionHistory(currentContent);
+                // Index shifts up by 1 since we added to front
+                index++;
+            }
+        } else if (state.currentRevisionIndex >= 0) {
+            // We're already viewing a history item - only save if user edited it
+            const viewingEntry = state.revisionHistory[state.currentRevisionIndex];
+            if (viewingEntry && currentContent !== viewingEntry.content) {
+                // User edited a history revision - save as new entry
+                saveToRevisionHistory(currentContent);
+                index++;
+            }
+        }
+        
+        // Restore selected revision (don't move it, just track the index)
+        const entry = state.revisionHistory[index];
+        if (!entry) {
+            console.warn('[WriteMe] Invalid revision index:', index);
+            hideModal('revision-history-modal');
+            return;
+        }
+        
+        elements.generatedContent.innerText = entry.content;
+        
+        // Update state
+        state.originalGeneratedContent = entry.content;
+        state.editedContent = '';
+        state.hasUnsavedEdits = false;
+        state.appliedStyleTags = [...entry.styles];
+        state.selectedStyleTags = [...entry.styles];
+        state.currentRevisionIndex = index; // Track which revision we're viewing
+        
+        updateEditIndicator();
+        updateStyleSuggestions();
+        updateRevisionHistoryButton();
+        
+        hideModal('revision-history-modal');
+    }
+    
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -2977,6 +3483,36 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         } else {
             elements.btnViewFeedback.classList.add('hidden');
         }
+    }
+    
+    function openFeedbackModal() {
+        if (!elements.feedbackModalList) return;
+        
+        let html = '';
+        if (state.feedbackHistory.length === 0) {
+            html = '<p class="no-feedback">No feedback recorded yet.</p>';
+        } else {
+            state.feedbackHistory.forEach((entry, idx) => {
+                const timeAgo = getTimeAgo(entry.timestamp);
+                const isLatest = idx === state.feedbackHistory.length - 1;
+                const styleCount = entry.appliedStyles.length;
+                const changeFromPrev = idx > 0 ? calculateFeedbackChange(idx) : null;
+                
+                html += `
+                    <div class="feedback-modal-item ${isLatest ? 'latest' : ''}">
+                        <div class="feedback-modal-text">"${escapeHtml(entry.text)}"</div>
+                        <div class="feedback-modal-meta">
+                            <span class="feedback-time">${timeAgo}</span>
+                            ${styleCount > 0 ? `<span class="feedback-styles">${styleCount} style${styleCount !== 1 ? 's' : ''}</span>` : ''}
+                            ${changeFromPrev !== null ? `<span class="feedback-change ${changeFromPrev >= 0 ? 'positive' : 'negative'}">${changeFromPrev >= 0 ? '+' : ''}${changeFromPrev}%</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        elements.feedbackModalList.innerHTML = html;
+        showModal('feedback-modal');
     }
     
     function updateStyleStudioButtons() {
@@ -3019,12 +3555,26 @@ Adapt the writing to fit this platform's culture and expectations while maintain
             }
         }
         
-        // Include all feedback history for accumulated learning
+        // Include all feedback history for accumulated learning with strong emphasis
         if (state.feedbackHistory.length > 0) {
-            prompt += '\n\n## STYLE FEEDBACK HISTORY\n\nApply all of this guidance cumulatively:\n';
+            prompt += '\n\n## CRITICAL: USER FEEDBACK REQUIREMENTS\n\n';
+            prompt += '**IMPORTANT: The following feedback represents explicit user preferences. Follow each point precisely and literally. These are not suggestions - they are requirements that MUST be reflected in the output.**\n\n';
+            prompt += 'Apply ALL of this guidance cumulatively, with each subsequent item building on previous ones:\n';
             state.feedbackHistory.forEach((entry, idx) => {
-                prompt += `\n${idx + 1}. "${entry.text}"`;
+                prompt += `\n${idx + 1}. REQUIREMENT: "${entry.text}"`;
+                if (entry.appliedStyles && entry.appliedStyles.length > 0) {
+                    prompt += ` [Applied with: ${entry.appliedStyles.join(', ')}]`;
+                }
             });
+            prompt += '\n\n**Verify that EACH feedback item above is clearly addressed in your output before finalizing.**';
+        }
+        
+        // Include user edits as strong guidance
+        if (state.editedContent && state.originalGeneratedContent && state.editedContent !== state.originalGeneratedContent) {
+            prompt += '\n\n## USER EDITS TO PREVIOUS OUTPUT\n\n';
+            prompt += '**The user manually edited the previous output. Their edits indicate preferred phrasing and structure. Learn from these changes:**\n\n';
+            const editAnalysis = analyzeUserEdits(state.originalGeneratedContent, state.editedContent);
+            prompt += editAnalysis;
         }
         
         // Add current feedback if different from last history entry
@@ -3034,11 +3584,56 @@ Adapt the writing to fit this platform's culture and expectations while maintain
                 : '';
             
             if (state.styleFeedback !== lastHistoryFeedback) {
-                prompt += '\n\n## CURRENT STYLE GUIDANCE\n\n' + state.styleFeedback;
+                prompt += '\n\n## IMMEDIATE STYLE GUIDANCE (HIGHEST PRIORITY)\n\n';
+                prompt += '**Apply this guidance with the highest priority:** ' + state.styleFeedback;
             }
         }
         
         return prompt;
+    }
+    
+    function analyzeUserEdits(original, edited) {
+        const origWords = original.split(/\s+/).filter(w => w);
+        const editWords = edited.split(/\s+/).filter(w => w);
+        const origParagraphs = original.split(/\n\s*\n/).filter(p => p.trim());
+        const editParagraphs = edited.split(/\n\s*\n/).filter(p => p.trim());
+        
+        let analysis = '';
+        
+        // Word count changes
+        const wordDiff = editWords.length - origWords.length;
+        if (wordDiff > 10) {
+            analysis += `- User ADDED substantial content (${wordDiff} words). Consider including more detail in your response.\n`;
+        } else if (wordDiff < -10) {
+            analysis += `- User REMOVED content (${Math.abs(wordDiff)} words). Be more concise in your response.\n`;
+        }
+        
+        // Paragraph changes
+        if (editParagraphs.length > origParagraphs.length) {
+            analysis += `- User restructured into MORE paragraphs (${origParagraphs.length} → ${editParagraphs.length}). Use shorter, more frequent paragraph breaks.\n`;
+        } else if (editParagraphs.length < origParagraphs.length) {
+            analysis += `- User CONDENSED paragraphs (${origParagraphs.length} → ${editParagraphs.length}). Use longer, more flowing paragraphs.\n`;
+        }
+        
+        // Find specific phrases that were kept vs removed
+        const origSentences = original.split(/[.!?]+/).filter(s => s.trim().length > 10);
+        const editSentences = edited.split(/[.!?]+/).filter(s => s.trim().length > 10);
+        
+        const keptSentences = origSentences.filter(s => edited.includes(s.trim().substring(0, 20)));
+        const removedSentences = origSentences.filter(s => !edited.includes(s.trim().substring(0, 20)));
+        
+        if (removedSentences.length > 0 && removedSentences.length <= 3) {
+            analysis += `- User REMOVED these types of phrases (AVOID similar phrasing):\n`;
+            removedSentences.slice(0, 2).forEach(s => {
+                analysis += `  "${s.trim().substring(0, 60)}..."\n`;
+            });
+        }
+        
+        if (!analysis) {
+            analysis = '- User made minor edits. Maintain similar style but refine based on other feedback.\n';
+        }
+        
+        return analysis;
     }
 
     // --- Output Collapse Behavior ---

@@ -488,7 +488,7 @@ Return ONLY the generated content. No explanations, no meta-commentary, no "Here
         
         // Lazy declarative openers
         { name: 'Opener: here\'s the thing', pattern: /^(here'?s (the thing|what|the deal|my take)|the (bottom line|reality|truth) is|let me (be clear|explain|break))[.:,]/gim, severity: 'high', category: 'opener' },
-        { name: 'Opener: real talk', pattern: /\b(real talk|look,? here'?s|okay,? so|alright,? so|honest(ly)?[,:] )/gi, severity: 'high', category: 'opener' },
+        { name: 'Opener: real talk', pattern: /\b(real talk[,:] |look,? here'?s|okay,? so|alright,? so)|(^|[.!?]\s+)honest(ly)?[,:] /gi, severity: 'high', category: 'opener' },
         { name: 'Opener: picture this', pattern: /^(picture this|imagine (this|a|if)|what if I told you|have you ever)[.:,]?/gim, severity: 'high', category: 'opener' },
         { name: 'Opener: let\'s dive', pattern: /\blet'?s (dive|dig|jump|get) (in|into|started|going)\b/gi, severity: 'high', category: 'opener' },
         { name: 'Opener: in this post', pattern: /^(in this (post|article|thread|piece)|today (I|we|I'm|we're)|I'm going to (show|explain|walk|break))/gim, severity: 'high', category: 'opener' },
@@ -513,6 +513,8 @@ Return ONLY the generated content. No explanations, no meta-commentary, no "Here
         { name: 'Meta: as I mentioned', pattern: /\b(as I (mentioned|said|noted|discussed)|as we (discussed|saw|noted)|mentioned (above|earlier|previously))\b/gi, severity: 'high', category: 'meta' },
         { name: 'Meta: this brings us', pattern: /\b(this (brings|leads|takes) us to|which brings (us|me) to|the point (I'm|I am) making)\b/gi, severity: 'high', category: 'meta' },
         { name: 'Meta: let me explain', pattern: /\b(let me (explain|elaborate|clarify|break this down)|I('ll| will) (explain|elaborate|break))\b/gi, severity: 'high', category: 'meta' },
+        { name: 'Meta: not for quick exit', pattern: /\b(not (writing|doing|sharing) this for a? quick (exit|win|buck|read)|want to share a moment that feels? (both )?personal and universal|feels? both personal and universal)\b/gi, severity: 'high', category: 'meta' },
+        { name: 'Meta: personal and universal', pattern: /\b(resonate(s)? (on )?a (deeply )?(personal|universal) level|speaks? to (something|a truth) (that's |that is )?(both )?(personal|universal)|something we all)\b/gi, severity: 'high', category: 'meta' },
         
         // Rhetorical Q&A patterns
         { name: 'Rhetorical Q&A', pattern: /\?[\s\n]+(It |This |That |The answer |Well,? |So,? |And |But )?(is|means|comes? down to|boils? down to)/gi, severity: 'high', category: 'structure' },

@@ -28,6 +28,9 @@ The heart of Write Like Me is its **comprehensive AI pattern detection system** 
 - Formulaic conclusions (In summary, At the end of the day)
 - Meta-commentary ("As I mentioned above", "Let me explain")
 - Rhetorical Q&A patterns
+- "Real talk" openers ("Real talk:", "Full transparency:")
+- Quick exit/cheap engagement lines ("not writing this for a quick exit")
+- "Personal and universal" clichés
 
 **Medium Priority Patterns:**
 - Overly formal phrasing ("It is worth noting", "utilize", "leverage")
@@ -100,9 +103,19 @@ GitHub repository URLs in your prompt are automatically detected. The tool fetch
 
 This provides rich technical context when generating content about code projects.
 
-### Style Sketch
+### Style Sketch Studio
 
-Based on your prompt content, the tool detects and suggests relevant tones:
+Based on your prompt content, the tool detects and suggests relevant tones with **sentiment-coded colors**:
+
+| Color | Sentiment | Example Styles |
+|-------|-----------|----------------|
+| 🟢 Green | Positive | Upbeat, Encouraging, Warm |
+| 🟠 Orange | Warm/Nurturing | Empathetic, Understanding, Supportive |
+| 🔵 Blue | Somber/Reflective | Melancholic, Thoughtful, Gentle |
+| 🔴 Red | Assertive/Strong | Bold, Confrontational, Urgent |
+| 🟣 Purple | Neutral/Balanced | Professional, Technical, Analytical |
+
+**Available Styles:**
 - **Accessible** — General audience, explains technical concepts simply
 - **Technical** — Precise, detailed terminology for expert readers
 - **Casual** — Relaxed, conversational language
@@ -117,10 +130,56 @@ Based on your prompt content, the tool detects and suggests relevant tones:
 - **Analytical** — Data-driven, logical reasoning
 - **Concise** — Ultra-brief, every word earns its place
 - **Thorough** — Comprehensive with full context
+- **Warm** — Friendly, approachable, inviting
+- **Understanding** — Acknowledges complexities and challenges
+- **Encouraging** — Supportive, motivating, confidence-building
+- **Storytelling** — Rich narrative with scene-setting
 
-Toggle tones on/off to guide generation while preserving your core voice. Hover for descriptions.
+Toggle tones on/off to guide generation while preserving your core voice. Hover for descriptions. **Already-selected tags appear pre-checked** and can be toggled off.
+
+**Predicted Impact Heuristics**: Each style shows how it might affect your output:
+- Word count changes (+/- percentage)
+- Sentence length shifts  
+- Structural modifications
 
 **Style Studio**: Click "Open Style Studio" for the full builder with all styles organized by category. Add custom feedback like "Make it more confident" to further guide generation. After generating, click "Edit Style" to adjust and regenerate.
+
+### Feedback History & Cumulative Learning
+
+The system tracks your feedback across generations and uses it to **incrementally improve** output quality:
+
+- **Feedback is treated as requirements**, not suggestions
+- Each feedback item is prefixed with **REQUIREMENT:** in the prompt
+- Historical feedback accumulates, building a richer context
+- **View Feedback** button shows your complete feedback trail
+- Percentage changes tracked to show cumulative impact
+
+### Content Edit Tracking
+
+When you edit generated content, the system analyzes your changes:
+
+- **Word count changes** — Did you add or remove substantial content?
+- **Paragraph restructuring** — Did you reorganize the flow?
+- **Sentence removal** — Which specific phrases were cut?
+
+These edits inform the next regeneration with specific guidance like:
+- "User ADDED substantial content — consider including more detail"
+- "User REMOVED these sentences — avoid similar phrasing"
+- "User RESTRUCTURED paragraphs — match this new organization"
+
+**Edit Indicator**: Shows "Edited" badge when you've modified generated content, with Save and Discard buttons.
+
+### Regenerate Confirmation
+
+Before regenerating, a confirmation modal shows exactly what will change:
+
+- New style tags being applied
+- Style tags being removed
+- Custom feedback additions
+- Content type changes
+- Edit analysis summary
+
+This ensures you know precisely how your next generation will differ.
 
 ### Profile Persistence
 
@@ -129,6 +188,15 @@ Toggle tones on/off to guide generation while preserving your core voice. Hover 
 - **Quick View** — Preview your profile while generating
 - **Full Profile Modal** — View complete profile without losing context
 - **Clear & Restart** — Start fresh with a new profile anytime
+
+### Save & Continue Editing
+
+After generating content, you have flexible options:
+
+- **Save** — Finalize the current version
+- **Save & Continue Editing** — Save your edits but keep editing
+- **Discard Edits** — Revert to the original generated version
+- **Regenerate** — Generate a new version with your latest style settings
 
 ## Input Methods
 
@@ -145,6 +213,7 @@ Toggle tones on/off to guide generation while preserving your core voice. Hover 
 - **Blog (Professional)** — Informative, authoritative
 - **Long-form Writing** — Articles, essays, reports
 - **Creative Writing** — Fiction, narrative, experimental
+- **Poetry** — With subtypes: Free Verse, Haiku, Sonnet, Limerick, Narrative Poetry, Spoken Word
 
 ## API Providers
 

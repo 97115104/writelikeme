@@ -504,12 +504,20 @@ Be specific about what you want — the tool will handle styling it in your voic
             <div id="output-section" class="output-section hidden">
                 <div id="output-header" class="output-header">
                     <h4>Generated Content</h4>
+                    <button id="btn-revision-history" class="btn-revision-history hidden" title="View revision history">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </button>
                     <button id="btn-toggle-output" class="btn-toggle-output hidden" title="Toggle output">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
                     </button>
                 </div>
                 <div id="output-body" class="output-body">
                     <div id="generated-content" class="generated-content" contenteditable="true" spellcheck="true"></div>
+                    <div id="edit-indicator" class="edit-indicator hidden">
+                        <span class="edit-indicator-text">You have unsaved edits</span>
+                        <button id="btn-save-edits" class="btn-small btn-save-edits">Save Edits</button>
+                        <button id="btn-discard-edits" class="btn-small btn-discard-edits">Discard</button>
+                    </div>
                     <p class="edit-hint">Click above to edit the generated text directly</p>
                     <div class="btn-row">
                         <button id="btn-copy-output" class="btn-small">Copy</button>
@@ -775,10 +783,58 @@ Be specific about what you want — the tool will handle styling it in your voic
                     </div>
                     
                     <div class="style-studio-footer">
-                        <button id="btn-style-studio-cancel" class="btn-secondary">Cancel</button>
+                        <button id="btn-style-studio-cancel" class="btn-secondary">Back to Editing</button>
+                        <button id="btn-style-studio-save" class="btn-secondary">Save & Continue Editing</button>
                         <button id="btn-style-studio-apply" class="btn-primary">Save Styles</button>
                         <button id="btn-style-studio-regenerate" class="btn-primary hidden">Regenerate with Styles</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pre-Regenerate Confirmation Modal -->
+        <div id="regenerate-confirm-modal" class="modal-overlay hidden">
+            <div class="modal modal-small">
+                <div class="modal-header">
+                    <h3>Regenerate with Your Changes</h3>
+                    <button id="btn-close-regenerate-confirm" class="btn-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Your next generation will be improved based on:</p>
+                    <ul id="regenerate-changes-list" class="regenerate-changes-list"></ul>
+                    <p class="regenerate-confirm-note">These changes help guide the AI to better match your preferences.</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-regenerate-edit-more" class="btn-secondary">Continue Editing</button>
+                    <button id="btn-regenerate-confirm" class="btn-primary">Regenerate Now</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revision History Modal -->
+        <div id="revision-history-modal" class="modal-overlay hidden">
+            <div class="modal modal-small">
+                <div class="modal-header">
+                    <h3>Revision History</h3>
+                    <button id="btn-close-revision-history" class="btn-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="revision-history-intro">Select a previous version to restore:</p>
+                    <div id="revision-history-list" class="revision-history-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback History Modal -->
+        <div id="feedback-modal" class="modal-overlay hidden">
+            <div class="modal modal-small">
+                <div class="modal-header">
+                    <h3>Feedback History</h3>
+                    <button id="btn-close-feedback-modal" class="btn-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="feedback-modal-intro">Your feedback guides each generation:</p>
+                    <div id="feedback-modal-list" class="feedback-modal-list"></div>
                 </div>
             </div>
         </div>
