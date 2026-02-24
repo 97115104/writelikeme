@@ -4,6 +4,36 @@ A free, serverless tool that analyzes your writing samples and creates a detaile
 
 **Live Demo:** [https://97115104.github.io/writelikeme/](https://97115104.github.io/writelikeme/)
 
+## Quick Start Guide
+
+### 1. Create Your Writing Profile
+
+1. **Add writing samples** — Paste text, enter URLs, or upload files
+2. **Aim for variety** — Include 3-5 samples from different contexts (emails, social posts, articles)
+3. **Click "Analyze"** — The tool extracts your unique voice patterns
+4. **Save your profile** — Click "Save to Browser" to reuse it later
+
+### 2. Generate Content
+
+1. **Choose content type** — Select from social media, blog, email, poetry, etc.
+2. **Write your prompt** — Describe what you want to write about
+3. **Select style tags** — Add tones like "Warm" or "Concise" to guide output
+4. **Click Generate** — Get content in your voice
+
+### 3. Refine Your Output
+
+1. **Edit directly** — Click on the generated text to make changes
+2. **Add feedback** — Open Style Studio and add notes like "Make it more confident"
+3. **Regenerate** — The system learns from your edits and feedback
+4. **Browse revisions** — Click the clock icon to restore previous versions
+
+### 4. Share or Save
+
+1. **Copy** — One-click copy to clipboard
+2. **Share** — Direct sharing to X, LinkedIn, Facebook, Reddit
+3. **Save edits** — Keep your refined version
+4. **Download** — Export as text file
+
 ## What It Does
 
 Write Like Me solves the "AI slop" problem. When you use AI to generate text, it often sounds generic, formulaic, and obviously machine-generated. This tool analyzes your actual writing to understand your voice, then uses that understanding to generate content that sounds like you.
@@ -116,26 +146,42 @@ Based on your prompt content, the tool detects and suggests relevant tones with 
 | 🟣 Purple | Neutral/Balanced | Professional, Technical, Analytical |
 
 **Available Styles:**
+
+**Audience:**
 - **Accessible** — General audience, explains technical concepts simply
 - **Technical** — Precise, detailed terminology for expert readers
+
+**Tone:**
 - **Casual** — Relaxed, conversational language
+- **Conversational** — Natural speech patterns, filler words, authentic rhythm
 - **Professional** — Polished, business-appropriate
+- **Kind** — Gentle, considerate language
+- **Warm** — Personal connection, genuine warmth
+- **Understanding** — Acknowledges and validates perspectives
+- **Compassionate** — Expresses care and support
+- **Reassuring** — Provides comfort and confidence
+- **Encouraging** — Motivates and inspires
+
+**Emotional:**
 - **Somber** — Gentle, emotionally measured for difficult topics
 - **Empathetic** — Shows understanding and compassion
 - **Upbeat** — Energetic, positive, celebratory
 - **Witty** — Light humor and clever observations
+
+**Purpose:**
 - **Persuasive** — Compelling, action-oriented
 - **Educational** — Clear explanations, step-by-step
 - **Narrative** — Story structure with vivid details
 - **Analytical** — Data-driven, logical reasoning
+
+**Format:**
 - **Concise** — Ultra-brief, every word earns its place
 - **Thorough** — Comprehensive with full context
-- **Warm** — Friendly, approachable, inviting
-- **Understanding** — Acknowledges complexities and challenges
-- **Encouraging** — Supportive, motivating, confidence-building
-- **Storytelling** — Rich narrative with scene-setting
+- **Emoji** — Adds appropriate emojis for warmth and expression
 
 Toggle tones on/off to guide generation while preserving your core voice. Hover for descriptions. **Already-selected tags appear pre-checked** and can be toggled off.
+
+**Smart Auto-Selection**: When writing personal text messages or emails with emotional content (birthday wishes, congratulations, thank you notes), the system automatically suggests **Emoji** and **Conversational** styles.
 
 **Predicted Impact Heuristics**: Each style shows how it might affect your output:
 - Word count changes (+/- percentage)
@@ -151,8 +197,23 @@ The system tracks your feedback across generations and uses it to **incrementall
 - **Feedback is treated as requirements**, not suggestions
 - Each feedback item is prefixed with **REQUIREMENT:** in the prompt
 - Historical feedback accumulates, building a richer context
-- **View Feedback** button shows your complete feedback trail
+- **View Feedback** button opens a modal showing your complete feedback trail
+- Feedback count badge shows how many notes are active
 - Percentage changes tracked to show cumulative impact
+
+### Revision History
+
+Track and restore previous versions of your generated content:
+
+- **Clock icon button** — Access revision history (appears after first generation)
+- **Version count badge** — Shows how many versions are saved
+- **Version preview** — See word count, styles used, and content preview
+- **Restore any version** — Click to restore a previous generation
+- **Smart deduplication** — Clicking through history doesn't create duplicate entries
+- **Current position tracking** — Shows which version you're currently viewing
+- **Up to 20 revisions** stored per session
+
+This allows you to experiment freely with regeneration, knowing you can always restore a version you liked better.
 
 ### Content Edit Tracking
 
@@ -171,15 +232,15 @@ These edits inform the next regeneration with specific guidance like:
 
 ### Regenerate Confirmation
 
-Before regenerating, a confirmation modal shows exactly what will change:
+After your first generation, if you've made changes (edits, feedback, or style adjustments), a confirmation modal shows exactly what will be applied:
 
-- New style tags being applied
-- Style tags being removed
-- Custom feedback additions
-- Content type changes
-- Edit analysis summary
+- **Style tags** — Which tones will guide the generation
+- **Feedback notes** — How many feedback items are active
+- **Your edits** — Summary of content changes you made
+- **New guidance** — Any custom feedback you've added
+- **Impact estimates** — Percentage improvements for accuracy, relevance, and tone
 
-This ensures you know precisely how your next generation will differ.
+The first generation always proceeds without confirmation. Subsequent generations only show confirmation when there are actual changes to apply.
 
 ### Profile Persistence
 
