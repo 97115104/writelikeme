@@ -843,6 +843,26 @@
         text-align: left;
     }
 
+    /* Profile metrics row - wrap on mobile */
+    .profile-metrics-row,
+    .profile-metrics-row-modal {
+        flex-wrap: wrap;
+    }
+
+    .profile-metric,
+    .profile-metric-modal {
+        flex: 1 1 calc(50% - 6px);
+        min-width: calc(50% - 6px);
+        max-width: calc(50% - 6px);
+    }
+
+    .profile-metrics-row.psychological .profile-metric,
+    .profile-metrics-row-modal.psychological .profile-metric-modal {
+        flex: 1 1 calc(50% - 6px);
+        min-width: calc(50% - 6px);
+        max-width: calc(50% - 6px);
+    }
+
     .input-tabs {
         flex-wrap: wrap;
     }
