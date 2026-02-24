@@ -172,6 +172,69 @@ const WritingAnalyzer = (() => {
                     maxParagraphs: 4,
                     template: 'cover-letter'
                 }
+            },
+            'poetry': {
+                label: 'Poetry',
+                hasTones: true,
+                defaultTone: 'free-verse',
+                tones: {
+                    'free-verse': {
+                        label: 'Free Verse',
+                        description: 'No fixed form, natural rhythm',
+                        instruction: 'Generate free verse poetry. No fixed meter or rhyme scheme. Focus on imagery, emotion, and natural speech rhythms. Use line breaks for emphasis and pacing. Let the content determine the form.',
+                        formatting: {
+                            useLineBreaks: true,
+                            preserveLineBreaks: true,
+                            noJustify: true
+                        }
+                    },
+                    'haiku': {
+                        label: 'Haiku',
+                        description: '5-7-5 syllables, nature focus',
+                        instruction: 'Generate a haiku. Traditional 5-7-5 syllable structure across three lines. Focus on nature imagery, seasons, or moments of insight. Capture a single vivid image or feeling. No titles needed.',
+                        formatting: {
+                            useLineBreaks: true,
+                            exactLines: 3,
+                            noTitle: true
+                        }
+                    },
+                    'sonnet': {
+                        label: 'Sonnet',
+                        description: '14 lines, iambic pentameter',
+                        instruction: 'Generate a sonnet. 14 lines in iambic pentameter. Can be Shakespearean (ABAB CDCD EFEF GG) or Petrarchan (ABBAABBA CDECDE). Develop an argument or emotion across the poem with a turn (volta) near the end.',
+                        formatting: {
+                            useLineBreaks: true,
+                            exactLines: 14
+                        }
+                    },
+                    'limerick': {
+                        label: 'Limerick',
+                        description: 'AABBA rhyme, humorous',
+                        instruction: 'Generate a limerick. Five lines with AABBA rhyme scheme. Lines 1, 2, 5 have 7-10 syllables; lines 3, 4 have 5-7 syllables. Humorous, often with a twist or punchline in the final line.',
+                        formatting: {
+                            useLineBreaks: true,
+                            exactLines: 5
+                        }
+                    },
+                    'ballad': {
+                        label: 'Ballad',
+                        description: 'Narrative, quatrain form',
+                        instruction: 'Generate a ballad. Narrative poetry in quatrain stanzas (4 lines each). Typically ABAB or ABCB rhyme. Tell a story with dramatic or emotional content. Use repetition and refrain for effect.',
+                        formatting: {
+                            useLineBreaks: true,
+                            stanzaBreaks: true
+                        }
+                    },
+                    'spoken-word': {
+                        label: 'Spoken Word',
+                        description: 'Performance poetry',
+                        instruction: 'Generate spoken word / slam poetry. Written for oral performance. Powerful, emotional, rhythmic. Use repetition, wordplay, and dramatic pauses. Address themes directly and personally. Raw and authentic.',
+                        formatting: {
+                            useLineBreaks: true,
+                            allowFragments: true
+                        }
+                    }
+                }
             }
         },
 
@@ -425,6 +488,7 @@ Return ONLY the generated content. No explanations, no meta-commentary, no "Here
         
         // Lazy declarative openers
         { name: 'Opener: here\'s the thing', pattern: /^(here'?s (the thing|what|the deal|my take)|the (bottom line|reality|truth) is|let me (be clear|explain|break))[.:,]/gim, severity: 'high', category: 'opener' },
+        { name: 'Opener: real talk', pattern: /\b(real talk|look,? here'?s|okay,? so|alright,? so|honest(ly)?[,:] )/gi, severity: 'high', category: 'opener' },
         { name: 'Opener: picture this', pattern: /^(picture this|imagine (this|a|if)|what if I told you|have you ever)[.:,]?/gim, severity: 'high', category: 'opener' },
         { name: 'Opener: let\'s dive', pattern: /\blet'?s (dive|dig|jump|get) (in|into|started|going)\b/gi, severity: 'high', category: 'opener' },
         { name: 'Opener: in this post', pattern: /^(in this (post|article|thread|piece)|today (I|we|I'm|we're)|I'm going to (show|explain|walk|break))/gim, severity: 'high', category: 'opener' },

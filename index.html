@@ -439,6 +439,7 @@ https://example.com/another-post" rows="6"></textarea>
                         <option value="email">Email</option>
                         <option value="long-form">Long-form Article</option>
                         <option value="creative">Creative Writing</option>
+                        <option value="poetry">Poetry</option>
                         <option value="readme">README / Docs</option>
                         <option value="marketing">Marketing Copy</option>
                         <option value="chat">Text / Chat</option>
@@ -508,7 +509,8 @@ Be specific about what you want — the tool will handle styling it in your voic
                     </button>
                 </div>
                 <div id="output-body" class="output-body">
-                    <div id="generated-content" class="generated-content"></div>
+                    <div id="generated-content" class="generated-content" contenteditable="true" spellcheck="true"></div>
+                    <p class="edit-hint">Click above to edit the generated text directly</p>
                     <div class="btn-row">
                         <button id="btn-copy-output" class="btn-small">Copy</button>
                         <button id="btn-regenerate" class="btn-small">Regenerate</button>
@@ -752,6 +754,12 @@ Be specific about what you want — the tool will handle styling it in your voic
                     
                     <div class="style-studio-content">
                         <div id="style-studio-list"></div>
+                        
+                        <!-- Style Preview Section -->
+                        <div id="style-preview-section" class="style-preview-section hidden">
+                            <h4>Predicted Style Impact</h4>
+                            <div id="style-preview-metrics" class="style-preview-metrics"></div>
+                        </div>
                         
                         <div class="style-studio-feedback">
                             <label for="style-feedback">Additional style guidance (optional):</label>

@@ -7,8 +7,10 @@
         profileAskedToSave: false,
         fetchedUrlContent: {}, // Cache for fetched URL content
         fetchedGitHubRepos: {}, // Cache for GitHub repo data
-        selectedStyleTags: [], // Active style suggestions
+        selectedStyleTags: [], // Pending style suggestions
+        appliedStyleTags: [], // Styles used for last generation
         styleFeedback: '', // Custom style feedback from studio
+        appliedStyleFeedback: '', // Feedback used for last generation
         profStyleChecked: false, // Track if professional style modal was shown for current prompt
         profStyleOverride: null // Professional style overrides from modal
     };
@@ -149,6 +151,8 @@
         elements.btnStyleStudioCancel = document.getElementById('btn-style-studio-cancel');
         elements.btnStyleStudioApply = document.getElementById('btn-style-studio-apply');
         elements.btnStyleStudioRegenerate = document.getElementById('btn-style-studio-regenerate');
+        elements.stylePreviewSection = document.getElementById('style-preview-section');
+        elements.stylePreviewMetrics = document.getElementById('style-preview-metrics');
 
         // Platform artifacts
         elements.platformArtifacts = document.getElementById('platform-artifacts');
@@ -499,21 +503,31 @@
 
     // --- Content Type Management ---
 
-    // Categories that have tone options
-    const CATEGORIES_WITH_TONES = ['social', 'blog', 'email', 'bio'];
+    // Categories that have tone options - dynamically pull from CONTENT_TYPES
+    function getCategoriesWithTones() {
+        if (!window.CONTENT_TYPES?.categories) return ['social', 'blog', 'email', 'bio', 'poetry'];
+        return Object.entries(window.CONTENT_TYPES.categories)
+            .filter(([key, cat]) => cat.hasTones)
+            .map(([key]) => key);
+    }
 
     function handleContentCategoryChange() {
         const category = elements.contentCategory?.value;
-        const hasTones = CATEGORIES_WITH_TONES.includes(category);
+        const contentTypes = window.CONTENT_TYPES?.categories;
+        const categoryConfig = contentTypes?.[category];
+        const hasTones = categoryConfig?.hasTones;
         
-        if (hasTones) {
+        if (hasTones && categoryConfig.tones) {
             elements.toneSelector?.classList.remove('hidden');
-            // Set default tone based on category
-            if (category === 'email') {
-                elements.contentTone.value = 'professional';
-            } else {
-                elements.contentTone.value = 'personal';
-            }
+            
+            // Populate tone dropdown dynamically
+            const toneOptions = Object.entries(categoryConfig.tones).map(([key, tone]) => 
+                `<option value="${key}">${tone.label}</option>`
+            ).join('');
+            elements.contentTone.innerHTML = toneOptions;
+            
+            // Set default tone
+            elements.contentTone.value = categoryConfig.defaultTone || Object.keys(categoryConfig.tones)[0];
         } else {
             elements.toneSelector?.classList.add('hidden');
         }
@@ -524,10 +538,12 @@
 
     function getContentTypeKey() {
         const category = elements.contentCategory?.value || 'blog';
-        const hasTones = CATEGORIES_WITH_TONES.includes(category);
+        const contentTypes = window.CONTENT_TYPES?.categories;
+        const categoryConfig = contentTypes?.[category];
+        const hasTones = categoryConfig?.hasTones;
         
         if (hasTones) {
-            const tone = elements.contentTone?.value || 'personal';
+            const tone = elements.contentTone?.value || categoryConfig?.defaultTone || 'personal';
             return `${category}-${tone}`;
         }
         return category;
@@ -1110,6 +1126,10 @@
 
             // Get style builder overrides
             const styleOverride = getStyleOverridePrompt();
+            
+            // Track what styles are being applied for this generation
+            state.appliedStyleTags = [...state.selectedStyleTags];
+            state.appliedStyleFeedback = state.styleFeedback;
 
             // Generate with platform context if detected
             const platformContext = getPlatformStyleContext() + professionalOverride + styleOverride;
@@ -1200,7 +1220,8 @@
     }
 
     async function copyOutput() {
-        const content = elements.generatedContent.textContent;
+        // Use innerText to get edited content from contenteditable, preserving line breaks
+        const content = elements.generatedContent.innerText;
 
         try {
             await navigator.clipboard.writeText(content);
@@ -2361,77 +2382,157 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         accessible: {
             label: 'Accessible',
             description: 'Write for a general audience without assuming technical knowledge. Explain jargon and use relatable examples.',
-            keywords: ['less technical', 'non-technical', 'general audience', 'beginners', 'simple terms', 'easy to understand', 'layman', 'accessible']
+            keywords: ['less technical', 'non-technical', 'general audience', 'beginners', 'simple terms', 'easy to understand', 'layman', 'accessible'],
+            sentiment: 'neutral',
+            category: 'audience'
         },
         technical: {
             label: 'Technical',
             description: 'Use precise technical language, be specific about implementation details, and assume reader familiarity with technical concepts.',
-            keywords: ['technical', 'code', 'programming', 'developer', 'api', 'software', 'github', 'readme', 'documentation', 'engineering']
+            keywords: ['technical', 'code', 'programming', 'developer', 'api', 'software', 'github', 'readme', 'documentation', 'engineering'],
+            sentiment: 'neutral',
+            category: 'audience'
         },
         // Tone-related
         informal: {
             label: 'Casual',
             description: 'Write in a relaxed, conversational tone. Use contractions, casual phrasing, and approachable language.',
-            keywords: ['casual', 'friendly', 'hey', 'cool', 'awesome', 'lol', 'btw', 'chat', 'dm', 'message', 'chill']
+            keywords: ['casual', 'friendly', 'hey', 'cool', 'awesome', 'lol', 'btw', 'chat', 'dm', 'message', 'chill'],
+            sentiment: 'positive',
+            category: 'tone'
         },
         formal: {
             label: 'Professional',
             description: 'Maintain professional language, proper grammar, and a respectful tone appropriate for business contexts.',
-            keywords: ['professional', 'corporate', 'business', 'meeting', 'presentation', 'report', 'proposal', 'executive']
+            keywords: ['professional', 'corporate', 'business', 'meeting', 'presentation', 'report', 'proposal', 'executive'],
+            sentiment: 'neutral',
+            category: 'tone'
+        },
+        // Warm/Kind tones
+        kind: {
+            label: 'Kind',
+            description: 'Use gentle, considerate language. Be thoughtful and warm without being overly effusive.',
+            keywords: ['kind', 'kindly', 'gentle', 'sweetly', 'nicely', 'please', 'thank you', 'grateful'],
+            sentiment: 'warm',
+            category: 'tone'
+        },
+        warm: {
+            label: 'Warm',
+            description: 'Create a sense of personal connection. Use inclusive language and genuine warmth.',
+            keywords: ['warm', 'warmly', 'heartfelt', 'sincere', 'genuine', 'close', 'dear', 'fondly'],
+            sentiment: 'warm',
+            category: 'tone'
+        },
+        understanding: {
+            label: 'Understanding',
+            description: 'Show that you truly hear and acknowledge the other person. Validate their perspective without judgment.',
+            keywords: ['understand', 'understanding', 'get it', 'makes sense', 'hear you', 'see where', 'appreciate', 'acknowledge'],
+            sentiment: 'warm',
+            category: 'tone'
+        },
+        compassionate: {
+            label: 'Compassionate',
+            description: 'Express genuine care and concern. Be present and supportive without trying to fix or minimize.',
+            keywords: ['compassion', 'compassionate', 'care', 'caring', 'here for you', 'with you', 'alongside', 'support'],
+            sentiment: 'warm',
+            category: 'tone'
+        },
+        reassuring: {
+            label: 'Reassuring',
+            description: 'Provide comfort and confidence. Help reduce anxiety or worry with calm, steady language.',
+            keywords: ['reassure', 'reassuring', 'it\'s okay', 'don\'t worry', 'everything will', 'be fine', 'calm', 'safe'],
+            sentiment: 'warm',
+            category: 'tone'
+        },
+        encouraging: {
+            label: 'Encouraging',
+            description: 'Motivate and inspire confidence. Highlight potential and express belief in the person or outcome.',
+            keywords: ['encourage', 'encouraging', 'you can', 'believe in', 'confident', 'proud', 'inspiring', 'motivation'],
+            sentiment: 'positive',
+            category: 'tone'
         },
         // Emotional tones
         somber: {
             label: 'Somber',
             description: 'Use a gentle, thoughtful, and emotionally measured tone. Be sensitive and avoid forced positivity.',
-            keywords: ['breakup', 'break up', 'ending', 'goodbye', 'farewell', 'sorry', 'apologize', 'loss', 'grief', 'passing', 'difficult', 'hard news', 'bad news']
+            keywords: ['breakup', 'break up', 'ending', 'goodbye', 'farewell', 'sorry', 'apologize', 'loss', 'grief', 'passing', 'difficult', 'hard news', 'bad news'],
+            sentiment: 'serious',
+            category: 'emotional'
         },
         empathetic: {
             label: 'Empathetic',
             description: 'Show understanding and compassion. Acknowledge feelings and validate emotions without being dismissive.',
-            keywords: ['comfort', 'support', 'understand', 'empathy', 'sympathy', 'care about', 'worried about', 'concerned', 'help with']
+            keywords: ['comfort', 'support', 'empathy', 'sympathy', 'care about', 'worried about', 'concerned', 'help with'],
+            sentiment: 'warm',
+            category: 'emotional'
         },
         upbeat: {
             label: 'Upbeat',
             description: 'Bring energy and positivity. Use enthusiastic language and highlight the exciting aspects.',
-            keywords: ['excited', 'amazing', 'thrilled', 'celebrate', 'congrats', 'congratulations', 'happy', 'great news', 'awesome news', 'announcement']
+            keywords: ['excited', 'amazing', 'thrilled', 'celebrate', 'congrats', 'congratulations', 'happy', 'great news', 'awesome news', 'announcement'],
+            sentiment: 'positive',
+            category: 'emotional'
         },
         humorous: {
             label: 'Witty',
             description: 'Include wit, clever observations, and light humor where appropriate. Keep it natural, not forced.',
-            keywords: ['funny', 'joke', 'humor', 'laugh', 'comedy', 'witty', 'sarcastic', 'ironic', 'playful']
+            keywords: ['funny', 'joke', 'humor', 'laugh', 'comedy', 'witty', 'sarcastic', 'ironic', 'playful'],
+            sentiment: 'positive',
+            category: 'emotional'
         },
         // Purpose-related
         persuasive: {
             label: 'Persuasive',
             description: 'Focus on benefits and value. Build a compelling case. Use action-oriented language.',
-            keywords: ['convince', 'marketing', 'sell', 'buy', 'benefit', 'value', 'why you should', 'best', 'pitch', 'proposal']
+            keywords: ['convince', 'marketing', 'sell', 'buy', 'benefit', 'value', 'why you should', 'best', 'pitch', 'proposal'],
+            sentiment: 'assertive',
+            category: 'purpose'
         },
         educational: {
             label: 'Educational',
             description: 'Explain concepts clearly. Build understanding step by step. Anticipate questions.',
-            keywords: ['explain', 'teach', 'learn', 'how to', 'guide', 'tutorial', 'step by step', 'walkthrough', 'lesson']
+            keywords: ['explain', 'teach', 'learn', 'how to', 'guide', 'tutorial', 'step by step', 'walkthrough', 'lesson'],
+            sentiment: 'neutral',
+            category: 'purpose'
         },
         storytelling: {
             label: 'Narrative',
             description: 'Use narrative structure. Include specific details that bring the story to life.',
-            keywords: ['story', 'narrative', 'journey', 'experience', 'happened', 'remember when', 'tale', 'memoir']
+            keywords: ['story', 'narrative', 'journey', 'experience', 'happened', 'remember when', 'tale', 'memoir'],
+            sentiment: 'neutral',
+            category: 'purpose'
         },
         analytical: {
             label: 'Analytical',
             description: 'Present information logically with clear reasoning. Support claims with evidence and data.',
-            keywords: ['analyze', 'analysis', 'data', 'research', 'findings', 'evidence', 'compare', 'evaluate', 'assess']
+            keywords: ['analyze', 'analysis', 'data', 'research', 'findings', 'evidence', 'compare', 'evaluate', 'assess'],
+            sentiment: 'neutral',
+            category: 'purpose'
         },
         // Format-related
         concise: {
             label: 'Concise',
             description: 'Be extremely brief. Every word must earn its place. Get to the point immediately.',
-            keywords: ['brief', 'short', 'quick', 'tldr', 'summary', 'twitter', 'tweet', 'succinct', 'direct']
+            keywords: ['brief', 'short', 'quick', 'tldr', 'summary', 'twitter', 'tweet', 'succinct', 'direct'],
+            sentiment: 'neutral',
+            category: 'format'
         },
         detailed: {
             label: 'Thorough',
             description: 'Provide comprehensive coverage. Include context, nuances, and supporting details.',
-            keywords: ['detailed', 'thorough', 'comprehensive', 'in-depth', 'complete', 'full', 'extensive', 'elaborate']
+            keywords: ['detailed', 'thorough', 'comprehensive', 'in-depth', 'complete', 'full', 'extensive', 'elaborate'],
+            sentiment: 'neutral',
+            category: 'format'
         }
+    };
+
+    // Sentiment color mapping for style tags
+    const SENTIMENT_COLORS = {
+        positive: { bg: '#e8f5e9', border: '#4caf50', text: '#2e7d32' },
+        warm: { bg: '#fff3e0', border: '#ff9800', text: '#e65100' },
+        neutral: { bg: '#f5f5f5', border: '#9e9e9e', text: '#424242' },
+        serious: { bg: '#e3f2fd', border: '#2196f3', text: '#1565c0' },
+        assertive: { bg: '#fce4ec', border: '#e91e63', text: '#c2185b' }
     };
 
     // Generate STYLE_KEYWORDS and STYLE_LABELS from STYLE_BUILDER for compatibility
@@ -2476,9 +2577,13 @@ Adapt the writing to fit this platform's culture and expectations while maintain
             if (detectedStyles.length > 0) {
                 tagsHtml = detectedStyles.map(style => {
                     const isActive = state.selectedStyleTags.includes(style);
-                    const desc = STYLE_BUILDER[style]?.description || '';
+                    const config = STYLE_BUILDER[style] || {};
+                    const desc = config.description || '';
+                    const sentiment = config.sentiment || 'neutral';
+                    const colors = SENTIMENT_COLORS[sentiment] || SENTIMENT_COLORS.neutral;
+                    const colorStyle = `background: ${colors.bg}; border-color: ${colors.border}; color: ${colors.text};`;
                     return `
-                        <span class="style-tag ${isActive ? 'active' : ''}" data-style="${style}" data-tooltip="${desc}">
+                        <span class="style-tag ${isActive ? 'active' : ''}" data-style="${style}" data-tooltip="${desc}" data-sentiment="${sentiment}" style="${colorStyle}">
                             ${STYLE_LABELS[style] || style}
                             ${isActive ? '<span class="tag-remove">×</span>' : ''}
                         </span>
@@ -2537,7 +2642,7 @@ Adapt the writing to fit this platform's culture and expectations while maintain
     function renderStyleStudioOptions() {
         const categories = {
             'Audience & Complexity': ['accessible', 'technical'],
-            'Tone & Register': ['informal', 'formal', 'somber', 'empathetic', 'upbeat', 'humorous'],
+            'Tone & Register': ['informal', 'formal', 'somber', 'empathetic', 'upbeat', 'humorous', 'kind', 'warm', 'understanding', 'compassionate', 'reassuring', 'encouraging'],
             'Purpose & Approach': ['persuasive', 'educational', 'storytelling', 'analytical'],
             'Length & Format': ['concise', 'detailed']
         };
@@ -2554,8 +2659,14 @@ Adapt the writing to fit this platform's culture and expectations while maintain
                 if (!config) continue;
                 
                 const isActive = state.selectedStyleTags.includes(styleKey);
+                const sentiment = config.sentiment || 'neutral';
+                const colors = SENTIMENT_COLORS[sentiment] || SENTIMENT_COLORS.neutral;
+                const colorStyle = isActive 
+                    ? `background: ${colors.bg}; border-color: ${colors.border}; color: ${colors.text};`
+                    : '';
+                
                 html += `
-                    <div class="style-studio-item ${isActive ? 'active' : ''}" data-style="${styleKey}">
+                    <div class="style-studio-item ${isActive ? 'active' : ''}" data-style="${styleKey}" data-sentiment="${sentiment}" style="${colorStyle}">
                         <div class="style-check">${isActive ? '✓' : ''}</div>
                         <div class="style-info">
                             <div class="style-name">${config.label}</div>
@@ -2569,6 +2680,162 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         }
 
         elements.styleStudioList.innerHTML = html;
+        updateStylePreview();
+    }
+
+    // Style impact heuristics for preview
+    const STYLE_IMPACT_HEURISTICS = {
+        // Tone impacts
+        informal: { formality: -30, warmth: +20, complexity: -10 },
+        formal: { formality: +35, warmth: -15, complexity: +10 },
+        somber: { energy: -40, warmth: -10, seriousness: +30 },
+        empathetic: { warmth: +35, connection: +25, formality: -10 },
+        upbeat: { energy: +40, warmth: +15, positivity: +30 },
+        humorous: { energy: +20, warmth: +10, formality: -25, engagement: +20 },
+        kind: { warmth: +30, positivity: +20, formality: -5 },
+        warm: { warmth: +35, connection: +20 },
+        understanding: { warmth: +25, connection: +30, empathy: +25 },
+        compassionate: { warmth: +40, empathy: +35, connection: +25 },
+        reassuring: { confidence: +25, warmth: +20, calmness: +30 },
+        encouraging: { energy: +25, positivity: +35, warmth: +20 },
+        // Audience impacts
+        accessible: { complexity: -30, clarity: +25, formality: -15 },
+        technical: { complexity: +35, precision: +25, formality: +20 },
+        // Purpose impacts
+        persuasive: { energy: +15, confidence: +30, engagement: +20 },
+        educational: { clarity: +30, structure: +25, complexity: +5 },
+        storytelling: { engagement: +35, warmth: +15, flow: +25 },
+        analytical: { precision: +30, complexity: +20, objectivity: +25 },
+        // Format impacts
+        concise: { brevity: +40, complexity: -15, directness: +30 },
+        detailed: { depth: +35, thoroughness: +30, brevity: -25 }
+    };
+
+    function calculateStyleImpacts(styleTags) {
+        const impacts = {};
+        for (const style of styleTags) {
+            const heuristics = STYLE_IMPACT_HEURISTICS[style];
+            if (!heuristics) continue;
+            
+            for (const [metric, value] of Object.entries(heuristics)) {
+                impacts[metric] = (impacts[metric] || 0) + value;
+            }
+        }
+        
+        // Clamp values to -100 to +100 range
+        for (const key of Object.keys(impacts)) {
+            impacts[key] = Math.max(-100, Math.min(100, impacts[key]));
+        }
+        return impacts;
+    }
+
+    function updateStylePreview() {
+        if (!elements.stylePreviewSection || !elements.stylePreviewMetrics) return;
+        
+        if (state.selectedStyleTags.length === 0) {
+            elements.stylePreviewSection.classList.add('hidden');
+            return;
+        }
+        
+        elements.stylePreviewSection.classList.remove('hidden');
+        
+        // Calculate pending impacts
+        const pendingImpacts = calculateStyleImpacts(state.selectedStyleTags);
+        
+        // Calculate applied impacts (if any)
+        const appliedImpacts = calculateStyleImpacts(state.appliedStyleTags || []);
+        const hasApplied = state.appliedStyleTags && state.appliedStyleTags.length > 0;
+        
+        // Generate preview HTML
+        const metricLabels = {
+            formality: 'Formality',
+            warmth: 'Warmth',
+            complexity: 'Reading Level',
+            energy: 'Energy',
+            positivity: 'Positivity',
+            confidence: 'Confidence',
+            engagement: 'Engagement',
+            clarity: 'Clarity',
+            precision: 'Precision',
+            seriousness: 'Seriousness',
+            connection: 'Connection',
+            empathy: 'Empathy',
+            calmness: 'Calmness',
+            structure: 'Structure',
+            flow: 'Flow',
+            objectivity: 'Objectivity',
+            brevity: 'Brevity',
+            depth: 'Depth',
+            thoroughness: 'Thoroughness',
+            directness: 'Directness'
+        };
+        
+        // Combine all metrics from both pending and applied
+        const allMetrics = new Set([...Object.keys(pendingImpacts), ...Object.keys(appliedImpacts)]);
+        
+        let html = '';
+        
+        if (hasApplied) {
+            html += '<p class="style-diff-notice">Showing changes from current styles:</p>';
+        }
+        
+        html += '<div class="style-impact-grid">';
+        
+        // Sort by absolute pending value or delta
+        const sortedMetrics = [...allMetrics].sort((a, b) => {
+            const deltaA = Math.abs((pendingImpacts[a] || 0) - (appliedImpacts[a] || 0));
+            const deltaB = Math.abs((pendingImpacts[b] || 0) - (appliedImpacts[b] || 0));
+            return deltaB - deltaA;
+        });
+        
+        for (const metric of sortedMetrics) {
+            const pending = pendingImpacts[metric] || 0;
+            const applied = appliedImpacts[metric] || 0;
+            const delta = pending - applied;
+            const label = metricLabels[metric] || metric;
+            
+            if (hasApplied) {
+                // Show diff mode
+                if (delta === 0) continue; // Skip unchanged metrics
+                
+                const sign = delta > 0 ? '+' : '';
+                const colorClass = delta > 0 ? 'impact-positive' : delta < 0 ? 'impact-negative' : 'impact-neutral';
+                
+                html += `
+                    <div class="style-impact-row style-diff-row">
+                        <span class="impact-label">${label}</span>
+                        <div class="impact-change">
+                            <span class="impact-old">${applied}%</span>
+                            <span class="impact-arrow">→</span>
+                            <span class="impact-new ${colorClass}">${pending}%</span>
+                        </div>
+                        <span class="impact-delta ${colorClass}">${sign}${delta}%</span>
+                    </div>
+                `;
+            } else {
+                // Show absolute mode
+                const sign = pending > 0 ? '+' : '';
+                const colorClass = pending > 0 ? 'impact-positive' : pending < 0 ? 'impact-negative' : 'impact-neutral';
+                const barWidth = Math.abs(pending);
+                
+                html += `
+                    <div class="style-impact-row">
+                        <span class="impact-label">${label}</span>
+                        <div class="impact-bar-container">
+                            <div class="impact-bar ${colorClass}" style="width: ${barWidth}%;"></div>
+                        </div>
+                        <span class="impact-value ${colorClass}">${sign}${pending}%</span>
+                    </div>
+                `;
+            }
+        }
+        
+        if (hasApplied && sortedMetrics.filter(m => (pendingImpacts[m] || 0) !== (appliedImpacts[m] || 0)).length === 0) {
+            html += '<p class="no-style-changes">No changes from current styles</p>';
+        }
+        
+        html += '</div>';
+        elements.stylePreviewMetrics.innerHTML = html;
     }
 
     function handleStyleStudioItemClick(e) {
@@ -2595,6 +2862,9 @@ Adapt the writing to fit this platform's culture and expectations while maintain
 
     function regenerateWithStyles() {
         state.styleFeedback = elements.styleFeedback.value.trim();
+        // Store what's being applied for diff tracking
+        state.appliedStyleTags = [...state.selectedStyleTags];
+        state.appliedStyleFeedback = state.styleFeedback;
         hideModal('style-studio-modal');
         updateStyleSuggestions();
         generateContent();
