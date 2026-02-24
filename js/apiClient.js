@@ -385,10 +385,13 @@ const ApiClient = (() => {
             console.log('[ApiClient] Checking Ollama at', base, 'for model', modelName);
 
             // Check for mixed content issue (HTTPS page trying to access HTTP localhost)
+            // Chrome allows localhost from HTTPS, but Safari/Firefox block it
             const isSecurePage = window.location.protocol === 'https:';
             const isHttpOllama = base.startsWith('http:');
-            if (isSecurePage && isHttpOllama) {
-                console.error('[ApiClient] Mixed content blocked: HTTPS page cannot access HTTP Ollama');
+            const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
+            
+            if (isSecurePage && isHttpOllama && !isChrome) {
+                console.error('[ApiClient] Mixed content blocked: HTTPS page cannot access HTTP Ollama (non-Chrome browser)');
                 return {
                     ok: false,
                     isMixedContent: true,
@@ -401,8 +404,8 @@ const ApiClient = (() => {
                 tagsResponse = await fetch(`${base}/api/tags`);
             } catch (err) {
                 console.error('[ApiClient] Ollama connection failed:', err);
-                // Double check if this might be mixed content
-                if (isSecurePage) {
+                // Double check if this might be mixed content (non-Chrome on HTTPS)
+                if (isSecurePage && !isChrome) {
                     return {
                         ok: false,
                         isMixedContent: true,
