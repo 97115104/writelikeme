@@ -6,6 +6,9 @@
         currentStep: 'input',
         profileAskedToSave: false,
         fetchedUrlContent: {}, // Cache for fetched URL content
+        fetchedGitHubRepos: {}, // Cache for GitHub repo data
+        selectedStyleTags: [], // Active style suggestions
+        styleFeedback: '', // Custom style feedback from studio
         profStyleChecked: false, // Track if professional style modal was shown for current prompt
         profStyleOverride: null // Professional style overrides from modal
     };
@@ -77,6 +80,7 @@
         // Profile input
         elements.profileInput = document.getElementById('profile-input');
         elements.btnLoadProfile = document.getElementById('btn-load-profile');
+        elements.profileFileInput = document.getElementById('profile-file-input');
 
         // Samples
         elements.samplesSection = document.getElementById('samples-section');
@@ -109,9 +113,13 @@
         elements.btnGenerate = document.getElementById('btn-generate');
         elements.generateLoading = document.getElementById('generate-loading');
         elements.outputSection = document.getElementById('output-section');
+        elements.outputHeader = document.getElementById('output-header');
+        elements.outputBody = document.getElementById('output-body');
+        elements.btnToggleOutput = document.getElementById('btn-toggle-output');
         elements.generatedContent = document.getElementById('generated-content');
         elements.btnCopyOutput = document.getElementById('btn-copy-output');
         elements.btnRegenerate = document.getElementById('btn-regenerate');
+        elements.btnEditStyle = document.getElementById('btn-edit-style');
         elements.slopCheck = document.getElementById('slop-check');
         elements.slopIssues = document.getElementById('slop-issues');
         elements.btnBackProfile = document.getElementById('btn-back-profile');
@@ -124,6 +132,23 @@
         // URL artifacts
         elements.urlArtifacts = document.getElementById('url-artifacts');
         elements.urlArtifactsList = document.getElementById('url-artifacts-list');
+
+        // GitHub artifacts
+        elements.githubArtifacts = document.getElementById('github-artifacts');
+        elements.githubArtifactsList = document.getElementById('github-artifacts-list');
+
+        // Style builder
+        elements.styleBuilder = document.getElementById('style-builder');
+        elements.styleSuggestions = document.getElementById('style-suggestions');
+
+        // Style Studio modal
+        elements.styleStudioModal = document.getElementById('style-studio-modal');
+        elements.btnCloseStyleStudio = document.getElementById('btn-close-style-studio');
+        elements.styleStudioList = document.getElementById('style-studio-list');
+        elements.styleFeedback = document.getElementById('style-feedback');
+        elements.btnStyleStudioCancel = document.getElementById('btn-style-studio-cancel');
+        elements.btnStyleStudioApply = document.getElementById('btn-style-studio-apply');
+        elements.btnStyleStudioRegenerate = document.getElementById('btn-style-studio-regenerate');
 
         // Platform artifacts
         elements.platformArtifacts = document.getElementById('platform-artifacts');
@@ -269,6 +294,7 @@
 
         // Profile input
         elements.btnLoadProfile.addEventListener('click', loadProfile);
+        elements.profileFileInput?.addEventListener('change', handleProfileFileUpload);
 
         // Samples list
         elements.samplesList.addEventListener('click', handleSampleRemove);
@@ -291,6 +317,7 @@
         elements.btnGenerate.addEventListener('click', generateContent);
         elements.btnRegenerate.addEventListener('click', generateContent);
         elements.btnCopyOutput.addEventListener('click', copyOutput);
+        elements.btnEditStyle?.addEventListener('click', openStyleStudio);
         elements.btnBackProfile.addEventListener('click', () => goToStep('profile'));
 
         // Content type category and tone selection
@@ -301,12 +328,48 @@
         elements.btnQuickProfile?.addEventListener('click', showQuickProfile);
         elements.btnFullProfile?.addEventListener('click', showFullProfile);
 
-        // URL and platform detection in prompt
+        // URL, GitHub, platform detection and style suggestions in prompt
+        let lastPromptForPlatformReset = '';
         elements.promptInput.addEventListener('input', () => {
             detectUrlsInPrompt();
+            detectGitHubRepos();
+            
+            // Reset platformDismissed if prompt changed significantly
+            const currentPrompt = elements.promptInput.value;
+            if (Math.abs(currentPrompt.length - lastPromptForPlatformReset.length) > 20) {
+                platformDismissed = false;
+                lastPromptForPlatformReset = currentPrompt;
+            }
+            
             detectPlatformInPrompt();
+            updateStyleSuggestions();
             state.profStyleChecked = false; // Reset on prompt change
+            
+            // Handle output collapse when prompt is cleared after generating
+            handlePromptClearBehavior();
         });
+
+        // Dismiss platform detection
+        elements.platformInfo?.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-dismiss-platform')) {
+                platformDismissed = true;
+                detectedPlatform = null;
+                elements.platformArtifacts.classList.add('hidden');
+            }
+        });
+
+        // Output toggle button
+        elements.btnToggleOutput?.addEventListener('click', toggleOutputCollapse);
+
+        // Style tag clicks
+        elements.styleSuggestions?.addEventListener('click', handleStyleTagClick);
+
+        // Style Studio modal
+        elements.btnCloseStyleStudio?.addEventListener('click', () => hideModal('style-studio-modal'));
+        elements.btnStyleStudioCancel?.addEventListener('click', () => hideModal('style-studio-modal'));
+        elements.btnStyleStudioApply?.addEventListener('click', applyStyleStudio);
+        elements.btnStyleStudioRegenerate?.addEventListener('click', regenerateWithStyles);
+        elements.styleStudioList?.addEventListener('click', handleStyleStudioItemClick);
 
         // Save profile modal
         elements.btnCloseSaveProfile?.addEventListener('click', () => hideModal('save-profile-modal'));
@@ -403,6 +466,12 @@
         elements.btnCloseOllama?.addEventListener('click', () => hideModal('ollama-modal'));
         elements.btnCloseFallback?.addEventListener('click', () => hideModal('puter-fallback-modal'));
         elements.btnSwitchOllama?.addEventListener('click', switchToOllama);
+
+        // Whodoneit button
+        document.getElementById('whodoneit-check-btn')?.addEventListener('click', () => {
+            const url = document.getElementById('whodoneit-check-btn')?.dataset.url;
+            if (url) window.open(url, '_blank');
+        });
 
         // OS tabs
         elements.osTabs.forEach(tab => {
@@ -991,6 +1060,36 @@
                 if (loadingStatus) loadingStatus.textContent = 'Applying your writing profile and removing AI patterns';
             }
 
+            // Fetch any GitHub repos in the prompt
+            const githubItems = elements.githubArtifactsList?.querySelectorAll('.github-artifact-item') || [];
+            if (githubItems.length > 0) {
+                const loadingStatus = document.querySelector('#generate-loading .loading-status');
+                if (loadingStatus) loadingStatus.textContent = 'Fetching GitHub repository data...';
+
+                const repos = await fetchAllGitHubRepos();
+
+                // Append repo data to the prompt
+                if (repos.length > 0) {
+                    prompt += '\n\n--- GitHub Repository Data ---\n';
+                    repos.forEach(({ repo, data }) => {
+                        prompt += `\n[Repository: ${repo}]\n`;
+                        prompt += `Description: ${data.description || 'No description'}\n`;
+                        prompt += `Language: ${data.language || 'Unknown'}\n`;
+                        prompt += `Stars: ${data.stars}, Forks: ${data.forks}\n`;
+                        prompt += `License: ${data.license}\n`;
+                        if (data.topics?.length) prompt += `Topics: ${data.topics.join(', ')}\n`;
+                        if (data.readme) {
+                            const readmeTruncated = data.readme.length > 3000 
+                                ? data.readme.substring(0, 3000) + '...[truncated]' 
+                                : data.readme;
+                            prompt += `\nREADME:\n${readmeTruncated}\n`;
+                        }
+                    });
+                }
+
+                if (loadingStatus) loadingStatus.textContent = 'Applying your writing profile and removing AI patterns';
+            }
+
             // Build professional style override context if applicable
             let professionalOverride = '';
             if (state.profStyleOverride) {
@@ -1009,8 +1108,11 @@
                 }
             }
 
+            // Get style builder overrides
+            const styleOverride = getStyleOverridePrompt();
+
             // Generate with platform context if detected
-            const platformContext = getPlatformStyleContext() + professionalOverride;
+            const platformContext = getPlatformStyleContext() + professionalOverride + styleOverride;
             let content = await WritingAnalyzer.generateContent(
                 state.profile,
                 prompt,
@@ -1048,6 +1150,8 @@
 
             elements.generateLoading.classList.add('hidden');
             elements.outputSection.classList.remove('hidden');
+            expandOutput(); // Ensure output is visible when generating new content
+            elements.btnToggleOutput?.classList.add('hidden'); // Hide toggle on fresh generation
 
             // Reset professional style state for next generation
             state.profStyleOverride = null;
@@ -1157,12 +1261,16 @@
     function updateWhodoneitLink() {
         const content = state.generatedContent || '';
         const whodoneitLink = document.getElementById('whodoneit-link');
-        const whodoneitCheckLink = document.getElementById('whodoneit-check-link');
+        const whodoneitCheckBtn = document.getElementById('whodoneit-check-btn');
         
-        if (content && whodoneitLink && whodoneitCheckLink) {
-            const encodedContent = encodeURIComponent(content.substring(0, 2000)); // Limit for URL length
-            whodoneitCheckLink.href = `https://97115104.github.io/whodoneit/?content=${encodedContent}&enter`;
+        if (content && whodoneitLink) {
             whodoneitLink.classList.remove('hidden');
+            
+            // Store the URL for the button click handler
+            if (whodoneitCheckBtn) {
+                const encodedContent = encodeURIComponent(content.substring(0, 2000)); // Limit for URL length
+                whodoneitCheckBtn.dataset.url = `https://97115104.github.io/whodoneit/?content=${encodedContent}&enter`;
+            }
         } else if (whodoneitLink) {
             whodoneitLink.classList.add('hidden');
         }
@@ -1712,6 +1820,7 @@
     };
 
     let detectedPlatform = null;
+    let platformDismissed = false;
 
     function detectPlatformInPrompt() {
         const text = elements.promptInput.value.toLowerCase();
@@ -1724,23 +1833,34 @@
             return;
         }
 
-        // Check for platform mentions
-        let platform = null;
-        for (const [key, data] of Object.entries(PLATFORM_STYLES)) {
-            // Check if platform name is mentioned
-            if (text.includes(key) || text.includes(data.name.toLowerCase())) {
-                platform = key;
-                break;
-            }
+        // If user dismissed the platform, don't re-detect until prompt changes significantly
+        if (platformDismissed) {
+            return;
         }
 
-        // Also check for common abbreviations and variations
-        if (!platform) {
-            if (text.includes('tweet') || text.includes('post on x')) platform = 'x';
-            else if (text.includes('linkedin post') || text.includes('for linkedin')) platform = 'linkedin';
-            else if (text.includes('fb') || text.includes('facebook')) platform = 'facebook';
-            else if (text.includes('ig') || text.includes('insta')) platform = 'instagram';
-            else if (text.includes('tiktok') || text.includes('tik tok')) platform = 'tiktok';
+        // Check for platform mentions using word boundaries
+        let platform = null;
+        
+        // Check explicit platform mentions first (more specific)
+        const platformChecks = [
+            { pattern: /\b(linkedin|linked in)\b/, platform: 'linkedin' },
+            { pattern: /\b(facebook|fb)\b/, platform: 'facebook' },
+            { pattern: /\b(instagram|insta)\b(?!\s*text)/, platform: 'instagram' },
+            { pattern: /\b(tiktok|tik tok)\b/, platform: 'tiktok' },
+            { pattern: /\b(threads)\b/, platform: 'threads' },
+            { pattern: /\b(bluesky|blue sky)\b/, platform: 'bluesky' },
+            { pattern: /\b(reddit)\b/, platform: 'reddit' },
+            { pattern: /\b(mastodon)\b/, platform: 'mastodon' },
+            { pattern: /\btweet\b|post (on|to|for) (x|twitter)\b|\btwitter\b/, platform: 'x' },
+            { pattern: /\b(substack|newsletter)\b/, platform: 'substack' },
+            { pattern: /\bemail\b(?!\s*(address|me))/, platform: 'email' }
+        ];
+
+        for (const check of platformChecks) {
+            if (check.pattern.test(text)) {
+                platform = check.platform;
+                break;
+            }
         }
 
         if (platform && PLATFORM_STYLES[platform]) {
@@ -1755,6 +1875,7 @@
                     ${data.name}
                 </span>
                 <span class="platform-hint">${data.maxLength ? `Max ${data.maxLength} chars` : 'No character limit'} • ${data.tone}</span>
+                <button class="btn-dismiss-platform" title="Dismiss platform detection">×</button>
             `;
         } else {
             elements.platformArtifacts.classList.add('hidden');
@@ -2126,5 +2247,436 @@ Adapt the writing to fit this platform's culture and expectations while maintain
             showToast('Content saved');
         }
         hideModal('url-content-modal');
+    }
+
+    // --- GitHub Repo Detection ---
+
+    function detectGitHubRepos() {
+        const text = elements.promptInput.value;
+        const githubRegex = /https?:\/\/github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)/gi;
+        const matches = [...text.matchAll(githubRegex)];
+
+        if (matches.length === 0) {
+            elements.githubArtifacts?.classList.add('hidden');
+            if (elements.githubArtifactsList) elements.githubArtifactsList.innerHTML = '';
+            return;
+        }
+
+        // Extract unique repos
+        const repos = [...new Set(matches.map(m => `${m[1]}/${m[2]}`))];
+        
+        elements.githubArtifacts?.classList.remove('hidden');
+        if (elements.githubArtifactsList) {
+            elements.githubArtifactsList.innerHTML = repos.map(repo => {
+                const cached = state.fetchedGitHubRepos[repo];
+                const status = cached ? 'Cached' : 'Pending';
+                const statusClass = cached ? 'success' : '';
+                return `
+                    <div class="github-artifact-item" data-repo="${escapeHtml(repo)}">
+                        <span class="repo-name">${escapeHtml(repo)}</span>
+                        <span class="repo-details">${cached ? `${cached.stars || 0} stars` : ''}</span>
+                        <span class="url-status ${statusClass}" data-status="${cached ? 'cached' : 'pending'}">${status}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    async function fetchGitHubRepo(repo) {
+        try {
+            // Fetch repo info
+            const repoResponse = await fetch(`https://api.github.com/repos/${repo}`);
+            if (!repoResponse.ok) throw new Error('Repo not found');
+            const repoData = await repoResponse.json();
+
+            // Fetch README
+            let readme = '';
+            try {
+                const readmeResponse = await fetch(`https://api.github.com/repos/${repo}/readme`);
+                if (readmeResponse.ok) {
+                    const readmeData = await readmeResponse.json();
+                    readme = atob(readmeData.content);
+                }
+            } catch (e) {
+                console.log('Could not fetch README:', e);
+            }
+
+            return {
+                name: repoData.name,
+                fullName: repoData.full_name,
+                description: repoData.description || '',
+                stars: repoData.stargazers_count,
+                forks: repoData.forks_count,
+                language: repoData.language,
+                topics: repoData.topics || [],
+                readme: readme,
+                license: repoData.license?.spdx_id || 'Unknown',
+                lastUpdated: repoData.updated_at
+            };
+        } catch (err) {
+            console.error('Failed to fetch GitHub repo:', repo, err);
+            throw err;
+        }
+    }
+
+    async function fetchAllGitHubRepos() {
+        const items = elements.githubArtifactsList?.querySelectorAll('.github-artifact-item') || [];
+        const results = [];
+
+        for (const item of items) {
+            const repo = item.dataset.repo;
+            const statusEl = item.querySelector('.url-status');
+            const detailsEl = item.querySelector('.repo-details');
+
+            if (state.fetchedGitHubRepos[repo]) {
+                statusEl.textContent = 'Cached';
+                statusEl.className = 'url-status success';
+                results.push({ repo, data: state.fetchedGitHubRepos[repo] });
+                continue;
+            }
+
+            statusEl.textContent = 'Fetching...';
+            statusEl.className = 'url-status loading';
+
+            try {
+                const data = await fetchGitHubRepo(repo);
+                state.fetchedGitHubRepos[repo] = data;
+                statusEl.textContent = 'Fetched';
+                statusEl.className = 'url-status success';
+                if (detailsEl) detailsEl.textContent = `${data.stars} stars`;
+                results.push({ repo, data });
+            } catch (err) {
+                statusEl.textContent = 'Failed';
+                statusEl.className = 'url-status error';
+            }
+        }
+
+        return results;
+    }
+
+    // --- Style Builder ---
+
+    const STYLE_BUILDER = {
+        // Audience-related
+        accessible: {
+            label: 'Accessible',
+            description: 'Write for a general audience without assuming technical knowledge. Explain jargon and use relatable examples.',
+            keywords: ['less technical', 'non-technical', 'general audience', 'beginners', 'simple terms', 'easy to understand', 'layman', 'accessible']
+        },
+        technical: {
+            label: 'Technical',
+            description: 'Use precise technical language, be specific about implementation details, and assume reader familiarity with technical concepts.',
+            keywords: ['technical', 'code', 'programming', 'developer', 'api', 'software', 'github', 'readme', 'documentation', 'engineering']
+        },
+        // Tone-related
+        informal: {
+            label: 'Casual',
+            description: 'Write in a relaxed, conversational tone. Use contractions, casual phrasing, and approachable language.',
+            keywords: ['casual', 'friendly', 'hey', 'cool', 'awesome', 'lol', 'btw', 'chat', 'dm', 'message', 'chill']
+        },
+        formal: {
+            label: 'Professional',
+            description: 'Maintain professional language, proper grammar, and a respectful tone appropriate for business contexts.',
+            keywords: ['professional', 'corporate', 'business', 'meeting', 'presentation', 'report', 'proposal', 'executive']
+        },
+        // Emotional tones
+        somber: {
+            label: 'Somber',
+            description: 'Use a gentle, thoughtful, and emotionally measured tone. Be sensitive and avoid forced positivity.',
+            keywords: ['breakup', 'break up', 'ending', 'goodbye', 'farewell', 'sorry', 'apologize', 'loss', 'grief', 'passing', 'difficult', 'hard news', 'bad news']
+        },
+        empathetic: {
+            label: 'Empathetic',
+            description: 'Show understanding and compassion. Acknowledge feelings and validate emotions without being dismissive.',
+            keywords: ['comfort', 'support', 'understand', 'empathy', 'sympathy', 'care about', 'worried about', 'concerned', 'help with']
+        },
+        upbeat: {
+            label: 'Upbeat',
+            description: 'Bring energy and positivity. Use enthusiastic language and highlight the exciting aspects.',
+            keywords: ['excited', 'amazing', 'thrilled', 'celebrate', 'congrats', 'congratulations', 'happy', 'great news', 'awesome news', 'announcement']
+        },
+        humorous: {
+            label: 'Witty',
+            description: 'Include wit, clever observations, and light humor where appropriate. Keep it natural, not forced.',
+            keywords: ['funny', 'joke', 'humor', 'laugh', 'comedy', 'witty', 'sarcastic', 'ironic', 'playful']
+        },
+        // Purpose-related
+        persuasive: {
+            label: 'Persuasive',
+            description: 'Focus on benefits and value. Build a compelling case. Use action-oriented language.',
+            keywords: ['convince', 'marketing', 'sell', 'buy', 'benefit', 'value', 'why you should', 'best', 'pitch', 'proposal']
+        },
+        educational: {
+            label: 'Educational',
+            description: 'Explain concepts clearly. Build understanding step by step. Anticipate questions.',
+            keywords: ['explain', 'teach', 'learn', 'how to', 'guide', 'tutorial', 'step by step', 'walkthrough', 'lesson']
+        },
+        storytelling: {
+            label: 'Narrative',
+            description: 'Use narrative structure. Include specific details that bring the story to life.',
+            keywords: ['story', 'narrative', 'journey', 'experience', 'happened', 'remember when', 'tale', 'memoir']
+        },
+        analytical: {
+            label: 'Analytical',
+            description: 'Present information logically with clear reasoning. Support claims with evidence and data.',
+            keywords: ['analyze', 'analysis', 'data', 'research', 'findings', 'evidence', 'compare', 'evaluate', 'assess']
+        },
+        // Format-related
+        concise: {
+            label: 'Concise',
+            description: 'Be extremely brief. Every word must earn its place. Get to the point immediately.',
+            keywords: ['brief', 'short', 'quick', 'tldr', 'summary', 'twitter', 'tweet', 'succinct', 'direct']
+        },
+        detailed: {
+            label: 'Thorough',
+            description: 'Provide comprehensive coverage. Include context, nuances, and supporting details.',
+            keywords: ['detailed', 'thorough', 'comprehensive', 'in-depth', 'complete', 'full', 'extensive', 'elaborate']
+        }
+    };
+
+    // Generate STYLE_KEYWORDS and STYLE_LABELS from STYLE_BUILDER for compatibility
+    const STYLE_KEYWORDS = {};
+    const STYLE_LABELS = {};
+    for (const [key, config] of Object.entries(STYLE_BUILDER)) {
+        STYLE_KEYWORDS[key] = config.keywords;
+        STYLE_LABELS[key] = config.label;
+    }
+
+    function updateStyleSuggestions() {
+        const text = elements.promptInput.value.toLowerCase();
+        
+        // Show style builder once there's any text
+        if (text.length < 5) {
+            elements.styleBuilder?.classList.add('hidden');
+            return;
+        }
+
+        const detectedStyles = [];
+        
+        // Detect styles based on keywords
+        for (const [style, keywords] of Object.entries(STYLE_KEYWORDS)) {
+            if (keywords.some(kw => text.includes(kw))) {
+                detectedStyles.push(style);
+            }
+        }
+
+        // Also include any manually selected styles
+        for (const style of state.selectedStyleTags) {
+            if (!detectedStyles.includes(style)) {
+                detectedStyles.push(style);
+            }
+        }
+
+        // Always show the style builder with at least the studio button
+        elements.styleBuilder?.classList.remove('hidden');
+        
+        if (elements.styleSuggestions) {
+            let tagsHtml = '';
+            
+            if (detectedStyles.length > 0) {
+                tagsHtml = detectedStyles.map(style => {
+                    const isActive = state.selectedStyleTags.includes(style);
+                    const desc = STYLE_BUILDER[style]?.description || '';
+                    return `
+                        <span class="style-tag ${isActive ? 'active' : ''}" data-style="${style}" data-tooltip="${desc}">
+                            ${STYLE_LABELS[style] || style}
+                            ${isActive ? '<span class="tag-remove">×</span>' : ''}
+                        </span>
+                    `;
+                }).join('');
+            } else {
+                tagsHtml = '<span class="style-sketch-empty">No styles detected yet</span>';
+            }
+            
+            elements.styleSuggestions.innerHTML = tagsHtml + 
+                '<button class="btn-style-studio" type="button">Open Style Studio</button>' +
+                '<p class="style-hint">Hover tags for details. Click to toggle.</p>';
+        }
+    }
+
+    function handleStyleTagClick(e) {
+        // Check if studio button was clicked
+        if (e.target.classList.contains('btn-style-studio')) {
+            openStyleStudio();
+            return;
+        }
+        
+        const tag = e.target.closest('.style-tag');
+        if (!tag) return;
+
+        const style = tag.dataset.style;
+        const idx = state.selectedStyleTags.indexOf(style);
+        
+        if (idx === -1) {
+            state.selectedStyleTags.push(style);
+        } else {
+            state.selectedStyleTags.splice(idx, 1);
+        }
+        
+        updateStyleSuggestions();
+    }
+
+    // --- Style Sketch Studio ---
+
+    function openStyleStudio() {
+        const hasGeneratedContent = !elements.outputSection?.classList.contains('hidden');
+        
+        // Show regenerate button if there's generated content
+        elements.btnStyleStudioApply.classList.toggle('hidden', hasGeneratedContent);
+        elements.btnStyleStudioRegenerate.classList.toggle('hidden', !hasGeneratedContent);
+        
+        // Render all style options
+        renderStyleStudioOptions();
+        
+        // Populate feedback if any
+        elements.styleFeedback.value = state.styleFeedback || '';
+        
+        showModal('style-studio-modal');
+    }
+
+    function renderStyleStudioOptions() {
+        const categories = {
+            'Audience & Complexity': ['accessible', 'technical'],
+            'Tone & Register': ['informal', 'formal', 'somber', 'empathetic', 'upbeat', 'humorous'],
+            'Purpose & Approach': ['persuasive', 'educational', 'storytelling', 'analytical'],
+            'Length & Format': ['concise', 'detailed']
+        };
+
+        let html = '';
+        
+        for (const [categoryName, styles] of Object.entries(categories)) {
+            html += `<div class="style-studio-section">
+                <h4>${categoryName}</h4>
+                <div class="style-studio-grid">`;
+            
+            for (const styleKey of styles) {
+                const config = STYLE_BUILDER[styleKey];
+                if (!config) continue;
+                
+                const isActive = state.selectedStyleTags.includes(styleKey);
+                html += `
+                    <div class="style-studio-item ${isActive ? 'active' : ''}" data-style="${styleKey}">
+                        <div class="style-check">${isActive ? '✓' : ''}</div>
+                        <div class="style-info">
+                            <div class="style-name">${config.label}</div>
+                            <div class="style-desc">${config.description}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div></div>';
+        }
+
+        elements.styleStudioList.innerHTML = html;
+    }
+
+    function handleStyleStudioItemClick(e) {
+        const item = e.target.closest('.style-studio-item');
+        if (!item) return;
+
+        const style = item.dataset.style;
+        const idx = state.selectedStyleTags.indexOf(style);
+        
+        if (idx === -1) {
+            state.selectedStyleTags.push(style);
+        } else {
+            state.selectedStyleTags.splice(idx, 1);
+        }
+        
+        renderStyleStudioOptions();
+    }
+
+    function applyStyleStudio() {
+        state.styleFeedback = elements.styleFeedback.value.trim();
+        hideModal('style-studio-modal');
+        updateStyleSuggestions();
+    }
+
+    function regenerateWithStyles() {
+        state.styleFeedback = elements.styleFeedback.value.trim();
+        hideModal('style-studio-modal');
+        updateStyleSuggestions();
+        generateContent();
+    }
+
+    function getStyleOverridePrompt() {
+        if (state.selectedStyleTags.length === 0 && !state.styleFeedback) return '';
+        
+        let prompt = '';
+        
+        if (state.selectedStyleTags.length > 0) {
+            const overrides = state.selectedStyleTags
+                .map(s => STYLE_BUILDER[s]?.description)
+                .filter(Boolean);
+            
+            if (overrides.length > 0) {
+                prompt = '\n\n## STYLE ADJUSTMENTS\n\n' + overrides.join('\n\n');
+            }
+        }
+        
+        if (state.styleFeedback) {
+            prompt += '\n\n## ADDITIONAL STYLE GUIDANCE\n\n' + state.styleFeedback;
+        }
+        
+        return prompt;
+    }
+
+    // --- Output Collapse Behavior ---
+
+    function handlePromptClearBehavior() {
+        const promptEmpty = elements.promptInput.value.trim().length === 0;
+        const hasOutput = !elements.outputSection?.classList.contains('hidden');
+        
+        if (promptEmpty && hasOutput) {
+            // Collapse output when prompt cleared after generating
+            collapseOutput();
+            // Reset style sketch
+            state.selectedStyleTags = [];
+            state.styleFeedback = '';
+            elements.styleBuilder?.classList.add('hidden');
+        }
+    }
+
+    function collapseOutput() {
+        elements.outputBody?.classList.add('collapsed');
+        elements.btnToggleOutput?.classList.remove('hidden');
+        elements.btnToggleOutput?.classList.add('collapsed');
+    }
+
+    function expandOutput() {
+        elements.outputBody?.classList.remove('collapsed');
+        elements.btnToggleOutput?.classList.remove('collapsed');
+    }
+
+    function toggleOutputCollapse() {
+        if (elements.outputBody?.classList.contains('collapsed')) {
+            expandOutput();
+        } else {
+            collapseOutput();
+        }
+    }
+
+    // --- Profile File Upload ---
+
+    function handleProfileFileUpload(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result;
+            if (typeof content === 'string') {
+                elements.profileInput.value = content;
+                loadProfile();
+            }
+        };
+        reader.onerror = () => {
+            UIRenderer.showError('Failed to read file. Please try again.');
+        };
+        reader.readAsText(file);
+        
+        // Reset file input so same file can be selected again
+        e.target.value = '';
     }
 })();

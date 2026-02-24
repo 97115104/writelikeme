@@ -36,7 +36,8 @@
                 <p><strong>High priority</strong> — Lazy declarative openers ("Here's the thing:"), colon-based declarations, formulaic transitions (However, Moreover), meta-commentary.</p>
                 <p><strong>Medium priority</strong> — Overly formal phrasing, AI vocabulary clusters (landscape, ecosystem, journey), passive voice, engagement bait.</p>
                 <p><strong>Low priority</strong> — Excessive intensifiers, hedge word clusters, filler adjectives.</p>
-                <p>Generated text receives a quality score from 0-100 showing how authentic it sounds. Text with critical issues is automatically rewritten.</p>
+                <p><strong>Formatting issues</strong> — Wall of text without breaks, very long paragraphs, excessive whitespace, extra long sentences.</p>
+                <p>Generated text receives a quality score from 0-100 showing how authentic it sounds. Text with critical or formatting issues is automatically fixed or rewritten.</p>
 
                 <h4>Platform-aware generation</h4>
                 <p>Mention a social platform in your prompt and the tool automatically adapts brevity and style:</p>
@@ -54,7 +55,7 @@
                 <p><strong>URL</strong> — Enter URLs to blog posts, articles, or web pages. The tool fetches and extracts the text content automatically.</p>
                 <p><strong>Paste</strong> — Copy and paste writing samples directly into the text area. Add multiple samples separated by line breaks.</p>
                 <p><strong>Upload</strong> — Upload text files (.txt, .md) containing your writing samples. Supports batch uploads of multiple files.</p>
-                <p><strong>Load Profile</strong> — Paste a previously saved profile JSON to skip analysis.</p>
+                <p><strong>Load Profile</strong> — Paste or upload a previously saved profile JSON to skip analysis.</p>
 
                 <h4>Content types</h4>
                 <p>Select a content category, then choose Personal or Professional tone where applicable:</p>
@@ -71,6 +72,13 @@
 
                 <h4>URL fetching</h4>
                 <p>When you include URLs in your prompt, they appear as artifacts below the input. Click any URL to preview its fetched content, edit it if needed, or fetch it if not yet loaded. The content is used as context when generating.</p>
+
+                <h4>GitHub repo detection</h4>
+                <p>GitHub repository URLs are detected automatically. The tool fetches the README and repository metadata (description, language, stars) to provide technical context when generating content about code projects.</p>
+
+                <h4>Style sketch</h4>
+                <p>Based on your prompt, the tool detects relevant tones and emotional contexts. For example, "breakup" triggers a Somber tone, while "less technical audience" suggests Accessible style. Click tags to toggle them on/off. Hover for descriptions of each style.</p>
+                <p>Click <strong>Open Style Studio</strong> for the full style builder with all available styles organized by category. Add custom feedback like "Make it more confident" to further guide generation. After generating, click <strong>Edit Style</strong> to adjust tones and regenerate.</p>
 
                 <h4>API providers</h4>
                 <p><strong>Puter GPT-OSS</strong> is the default and is completely free with no API key required. Uses Puter's user-pays model.</p>
@@ -307,7 +315,15 @@ https://example.com/another-post" rows="6"></textarea>
                     <label for="profile-input">Paste Writing Profile JSON</label>
                     <textarea id="profile-input" placeholder="Paste a previously saved writing profile JSON here to skip analysis and go directly to text generation." rows="6"></textarea>
                 </div>
-                <button id="btn-load-profile" class="btn-secondary">Load Profile</button>
+                <div class="load-profile-actions">
+                    <button id="btn-load-profile" class="btn-secondary">Load Profile</button>
+                    <span class="load-divider">or</span>
+                    <label for="profile-file-input" class="btn-secondary btn-upload-profile">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+                        Upload JSON File
+                    </label>
+                    <input type="file" id="profile-file-input" accept=".json" class="hidden">
+                </div>
             </div>
 
             <!-- Sample List -->
@@ -418,16 +434,16 @@ https://example.com/another-post" rows="6"></textarea>
                 <div class="form-group">
                     <label for="content-category">Content Type</label>
                     <select id="content-category">
-                        <option value="social">📱 Social Media</option>
-                        <option value="blog">✍️ Blog Post</option>
-                        <option value="email">📧 Email</option>
-                        <option value="long-form">📄 Long-form Article</option>
-                        <option value="creative">🎭 Creative Writing</option>
-                        <option value="readme">📋 README / Docs</option>
-                        <option value="marketing">📣 Marketing Copy</option>
-                        <option value="chat">💬 Text / Chat</option>
-                        <option value="bio">👤 Bio / About Me</option>
-                        <option value="cover-letter">📝 Cover Letter</option>
+                        <option value="social">Social Media</option>
+                        <option value="blog">Blog Post</option>
+                        <option value="email">Email</option>
+                        <option value="long-form">Long-form Article</option>
+                        <option value="creative">Creative Writing</option>
+                        <option value="readme">README / Docs</option>
+                        <option value="marketing">Marketing Copy</option>
+                        <option value="chat">Text / Chat</option>
+                        <option value="bio">Bio / About Me</option>
+                        <option value="cover-letter">Cover Letter</option>
                     </select>
                 </div>
                 <div id="tone-selector" class="form-group hidden">
@@ -454,6 +470,21 @@ Be specific about what you want — the tool will handle styling it in your voic
                 <div id="url-artifacts-list" class="url-artifacts-list"></div>
             </div>
 
+            <!-- GitHub Repo Artifacts Section -->
+            <div id="github-artifacts" class="github-artifacts hidden">
+                <h5>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    GitHub Repository
+                </h5>
+                <div id="github-artifacts-list" class="github-artifacts-list"></div>
+            </div>
+
+            <!-- Style Sketch Section -->
+            <div id="style-builder" class="style-builder hidden">
+                <h5>Style Sketch</h5>
+                <div id="style-suggestions" class="style-suggestions"></div>
+            </div>
+
             <!-- Platform Detection Section -->
             <div id="platform-artifacts" class="platform-artifacts hidden">
                 <h5>Detected Platform</h5>
@@ -470,12 +501,19 @@ Be specific about what you want — the tool will handle styling it in your voic
 
             <!-- Output Section -->
             <div id="output-section" class="output-section hidden">
-                <h4>Generated Content</h4>
-                <div id="generated-content" class="generated-content"></div>
-                <div class="btn-row">
-                    <button id="btn-copy-output" class="btn-small">Copy</button>
-                    <button id="btn-regenerate" class="btn-small">Regenerate</button>
+                <div id="output-header" class="output-header">
+                    <h4>Generated Content</h4>
+                    <button id="btn-toggle-output" class="btn-toggle-output hidden" title="Toggle output">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                    </button>
                 </div>
+                <div id="output-body" class="output-body">
+                    <div id="generated-content" class="generated-content"></div>
+                    <div class="btn-row">
+                        <button id="btn-copy-output" class="btn-small">Copy</button>
+                        <button id="btn-regenerate" class="btn-small">Regenerate</button>
+                        <button id="btn-edit-style" class="btn-small btn-edit-style">Edit Style</button>
+                    </div>
 
                 <div id="share-buttons" class="share-buttons hidden">
                     <div class="share-primary">
@@ -516,13 +554,17 @@ Be specific about what you want — the tool will handle styling it in your voic
                 </div>
 
                 <div id="whodoneit-link" class="whodoneit-link hidden">
-                    <a href="#" id="whodoneit-check-link" target="_blank" rel="noopener">🔍 Check this text with WhoDoNeIt</a>
+                    <button id="whodoneit-check-btn" class="btn-secondary btn-whodoneit">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        Check with WhoDoNeIt
+                    </button>
                 </div>
 
                 <div class="slop-check hidden" id="slop-check">
                     <h5>Slop Check</h5>
                     <div id="slop-issues"></div>
                 </div>
+                </div><!-- .output-body -->
             </div>
 
             <div class="step-nav">
@@ -693,6 +735,34 @@ Be specific about what you want — the tool will handle styling it in your voic
                     <p style="font-size: 13px; color: #666; margin-top: 12px;">You can update or clear your profile from the input screen.</p>
                     <div class="modal-actions">
                         <button id="btn-close-storage-ok" class="btn-primary">Got it</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Style Sketch Studio Modal -->
+        <div id="style-studio-modal" class="modal-overlay hidden">
+            <div class="modal modal-medium">
+                <div class="modal-header">
+                    <h3>Style Sketch Studio</h3>
+                    <button id="btn-close-style-studio" class="btn-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Select styles to shape your content. Each style adjusts the tone, pacing, and approach of the generated text while preserving your core voice.</p>
+                    
+                    <div class="style-studio-content">
+                        <div id="style-studio-list"></div>
+                        
+                        <div class="style-studio-feedback">
+                            <label for="style-feedback">Additional style guidance (optional):</label>
+                            <textarea id="style-feedback" placeholder="E.g., 'Make it sound more confident' or 'Add a bit of humor but keep it professional'"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="style-studio-footer">
+                        <button id="btn-style-studio-cancel" class="btn-secondary">Cancel</button>
+                        <button id="btn-style-studio-apply" class="btn-primary">Apply Styles</button>
+                        <button id="btn-style-studio-regenerate" class="btn-primary hidden">Regenerate with Styles</button>
                     </div>
                 </div>
             </div>

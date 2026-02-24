@@ -368,6 +368,17 @@ textarea {
     margin-top: 12px;
 }
 
+.btn-edit-style {
+    background: #fff3e0;
+    border-color: #ffb74d;
+    color: #e65100;
+}
+
+.btn-edit-style:hover {
+    background: #ffe0b2;
+    border-color: #ffa726;
+}
+
 /* Loading */
 .loading-container {
     text-align: center;

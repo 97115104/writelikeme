@@ -82,6 +82,30 @@
     display: block;
 }
 
+/* Load Profile Actions */
+.load-profile-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.load-divider {
+    color: #999;
+    font-size: 13px;
+}
+
+.btn-upload-profile {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.btn-upload-profile svg {
+    flex-shrink: 0;
+}
+
 /* Drop Area */
 .drop-area {
     border: 2px dashed #ccc;
@@ -413,6 +437,46 @@
     border-top: 1px solid #eee;
 }
 
+.output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.output-header h4 {
+    margin: 0;
+}
+
+.btn-toggle-output {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    color: #666;
+    transition: transform 0.2s, background 0.15s;
+}
+
+.btn-toggle-output:hover {
+    background: #f5f5f5;
+}
+
+.btn-toggle-output.collapsed svg {
+    transform: rotate(-90deg);
+}
+
+.output-body {
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+}
+
+.output-body.collapsed {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
 .output-section h4 {
     margin-bottom: 12px;
 }
@@ -733,6 +797,291 @@
     font-size: 12px;
     color: #888;
     margin-bottom: 16px;
+}
+
+/* GitHub Artifacts */
+.github-artifacts {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+.github-artifacts h5 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: #24292f;
+    display: flex;
+    align-items: center;
+}
+
+.github-artifacts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.github-artifact-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.github-artifact-item:hover {
+    background: #f6f8fa;
+    border-color: #1976d2;
+}
+
+.github-artifact-item .repo-name {
+    flex: 1;
+    font-weight: 500;
+    color: #0969da;
+}
+
+.github-artifact-item .repo-details {
+    font-size: 12px;
+    color: #57606a;
+}
+
+/* Style Builder */
+.style-builder {
+    background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%);
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+.style-builder h5 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.style-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.style-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    font-size: 12px;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.style-tag:hover {
+    border-color: #2e7d32;
+    color: #2e7d32;
+}
+
+.style-tag[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: normal;
+    width: 200px;
+    text-align: center;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    pointer-events: none;
+}
+
+.style-tag[data-tooltip]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #333;
+    z-index: 100;
+}
+
+.style-tag.active {
+    background: #e8f5e9;
+    border-color: #2e7d32;
+    color: #2e7d32;
+}
+
+.style-tag .tag-remove {
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 10px;
+    background: rgba(0,0,0,0.1);
+    color: inherit;
+}
+
+.style-tag .tag-remove:hover {
+    background: rgba(0,0,0,0.2);
+}
+
+.style-hint {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #888;
+    width: 100%;
+}
+
+.style-sketch-empty {
+    font-size: 12px;
+    color: #999;
+    font-style: italic;
+}
+
+.btn-style-studio {
+    background: none;
+    border: 1px dashed #2e7d32;
+    color: #2e7d32;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-style-studio:hover {
+    background: #e8f5e9;
+    border-style: solid;
+}
+
+/* Style Sketch Studio Modal */
+.style-studio-content {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.style-studio-section {
+    margin-bottom: 20px;
+}
+
+.style-studio-section h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+}
+
+.style-studio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.style-studio-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.style-studio-item:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+.style-studio-item.active {
+    background: #e8f5e9;
+    border-color: #2e7d32;
+}
+
+.style-studio-item .style-check {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+}
+
+.style-studio-item.active .style-check {
+    background: #2e7d32;
+    border-color: #2e7d32;
+    color: #fff;
+}
+
+.style-studio-item .style-info {
+    flex: 1;
+}
+
+.style-studio-item .style-name {
+    font-weight: 500;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.style-studio-item .style-desc {
+    font-size: 11px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.style-studio-feedback {
+    margin-top: 16px;
+}
+
+.style-studio-feedback label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #333;
+}
+
+.style-studio-feedback textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.style-studio-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+    margin-top: 16px;
 }
 
 /* Modal Variations */
@@ -1160,6 +1509,28 @@
 .platform-hint {
     font-size: 12px;
     color: #666;
+    flex: 1;
+}
+
+.btn-dismiss-platform {
+    background: none;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 16px;
+    line-height: 1;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.btn-dismiss-platform:hover {
+    background: rgba(0,0,0,0.1);
+    color: #666;
 }
 
 /* Button Variants */
@@ -1295,24 +1666,23 @@
     width: 100%;
 }
 
-/* Whodoneit Link */
+/* Whodoneit Button */
 .whodoneit-link {
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid #eee;
 }
 
-.whodoneit-link a {
+.btn-whodoneit {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: #666;
-    text-decoration: none;
+    padding: 8px 14px;
 }
 
-.whodoneit-link a:hover {
-    color: #333;
+.btn-whodoneit svg {
+    flex-shrink: 0;
 }
 
 /* Platform Icon in Detection */

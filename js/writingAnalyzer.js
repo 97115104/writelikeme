@@ -6,7 +6,6 @@ const WritingAnalyzer = (() => {
                 label: 'Social Media',
                 hasTones: true,
                 defaultTone: 'personal',
-                icon: '📱',
                 tones: {
                     'personal': {
                         label: 'Personal',
@@ -36,7 +35,6 @@ const WritingAnalyzer = (() => {
                 label: 'Blog Post',
                 hasTones: true,
                 defaultTone: 'personal',
-                icon: '✍️',
                 tones: {
                     'personal': {
                         label: 'Personal',
@@ -64,7 +62,6 @@ const WritingAnalyzer = (() => {
                 label: 'Email',
                 hasTones: true,
                 defaultTone: 'professional',
-                icon: '📧',
                 tones: {
                     'personal': {
                         label: 'Personal',
@@ -93,7 +90,6 @@ const WritingAnalyzer = (() => {
             'long-form': {
                 label: 'Long-form Article',
                 hasTones: false,
-                icon: '📄',
                 instruction: 'Generate long-form content such as articles or essays. Sustained arguments, detailed exploration, multiple sections if needed.',
                 formatting: {
                     useLineBreaks: true,
@@ -104,7 +100,6 @@ const WritingAnalyzer = (() => {
             'creative': {
                 label: 'Creative Writing',
                 hasTones: false,
-                icon: '🎭',
                 instruction: 'Generate creative writing. Narrative focus, experimental where appropriate to the style, emphasis on voice and rhythm.',
                 formatting: {
                     useLineBreaks: true,
@@ -114,7 +109,6 @@ const WritingAnalyzer = (() => {
             'readme': {
                 label: 'README / Docs',
                 hasTones: false,
-                icon: '📋',
                 instruction: 'Generate README or technical documentation. Clear, concise, well-structured. Use headings, brief explanations, and practical examples. Focus on clarity over personality. Write for developers who will scan quickly.',
                 formatting: {
                     useMarkdown: true,
@@ -126,7 +120,6 @@ const WritingAnalyzer = (() => {
             'marketing': {
                 label: 'Marketing Copy',
                 hasTones: false,
-                icon: '📣',
                 instruction: 'Generate marketing copy. Persuasive, benefit-focused, clear value proposition. Punchy and compelling. Connect emotionally while being specific. No fluff or corporate jargon.',
                 formatting: {
                     useLineBreaks: true,
@@ -136,7 +129,6 @@ const WritingAnalyzer = (() => {
             'chat': {
                 label: 'Text / Chat',
                 hasTones: false,
-                icon: '💬',
                 instruction: 'Generate text message or chat content. Ultra-brief, conversational, casual. Use natural speech patterns. No formality. Can use sentence fragments. Keep it real.',
                 formatting: {
                     ultraBrief: true,
@@ -149,7 +141,6 @@ const WritingAnalyzer = (() => {
                 label: 'Bio / About Me',
                 hasTones: true,
                 defaultTone: 'personal',
-                icon: '👤',
                 tones: {
                     'personal': {
                         label: 'Personal',
@@ -173,7 +164,6 @@ const WritingAnalyzer = (() => {
             'cover-letter': {
                 label: 'Cover Letter',
                 hasTones: false,
-                icon: '📝',
                 instruction: 'Generate a cover letter. Professional but personable. Connect experience to requirements. Show enthusiasm without being sycophantic. Concrete examples over generic claims. 3-4 paragraphs max. Include proper greeting and professional sign-off.',
                 formatting: {
                     greeting: true,
@@ -218,7 +208,6 @@ const WritingAnalyzer = (() => {
             return Object.entries(this.categories).map(([key, cat]) => ({
                 key,
                 label: cat.label,
-                icon: cat.icon,
                 hasTones: cat.hasTones
             }));
         },
@@ -514,10 +503,158 @@ Return ONLY the generated content. No explanations, no meta-commentary, no "Here
         { name: 'Reader address', pattern: /\b(you might (be wondering|think|notice)|as you can see|you'?ll (notice|find|see)|if you'?re like me)\b/gi, severity: 'low', category: 'voice', threshold: 2 }
     ];
 
+    // Check for formatting/whitespace issues
+    function checkFormatting(text) {
+        const issues = [];
+        const lines = text.split('\n');
+        const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
+        const wordCount = text.split(/\s+/).filter(w => w).length;
+        
+        // Wall of text - single paragraph with many words
+        if (paragraphs.length === 1 && wordCount > 100) {
+            issues.push({
+                type: 'Wall of text',
+                count: 1,
+                severity: 'high',
+                category: 'formatting',
+                examples: ['Single paragraph with ' + wordCount + ' words']
+            });
+        }
+        
+        // Very long paragraphs (over 150 words each)
+        const longParagraphs = paragraphs.filter(p => p.split(/\s+/).length > 150);
+        if (longParagraphs.length > 0) {
+            issues.push({
+                type: 'Very long paragraphs',
+                count: longParagraphs.length,
+                severity: 'medium',
+                category: 'formatting',
+                examples: longParagraphs.slice(0, 2).map(p => p.substring(0, 50) + '...')
+            });
+        }
+        
+        // Missing line breaks between paragraphs (single newline instead of double)
+        const singleNewlines = (text.match(/[^\n]\n[^\n\s]/g) || []).length;
+        if (singleNewlines > 2 && paragraphs.length < 3) {
+            issues.push({
+                type: 'Missing paragraph breaks',
+                count: singleNewlines,
+                severity: 'medium',
+                category: 'formatting',
+                examples: ['Use double line breaks between paragraphs']
+            });
+        }
+        
+        // Multiple consecutive spaces
+        const multipleSpaces = (text.match(/  +/g) || []);
+        if (multipleSpaces.length > 2) {
+            issues.push({
+                type: 'Multiple consecutive spaces',
+                count: multipleSpaces.length,
+                severity: 'low',
+                category: 'formatting',
+                examples: multipleSpaces.slice(0, 3).map(() => '[double space]')
+            });
+        }
+        
+        // Leading/trailing whitespace on lines
+        const whitespaceLines = lines.filter(l => l !== l.trim() && l.trim().length > 0);
+        if (whitespaceLines.length > 3) {
+            issues.push({
+                type: 'Extra whitespace on lines',
+                count: whitespaceLines.length,
+                severity: 'low',
+                category: 'formatting',
+                examples: ['Lines with leading/trailing spaces']
+            });
+        }
+        
+        // Very long sentences (over 50 words without punctuation break)
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim());
+        const longSentences = sentences.filter(s => s.split(/\s+/).length > 50);
+        if (longSentences.length > 0) {
+            issues.push({
+                type: 'Very long sentences',
+                count: longSentences.length,
+                severity: 'medium',
+                category: 'formatting',
+                examples: longSentences.slice(0, 2).map(s => s.trim().substring(0, 60) + '...')
+            });
+        }
+        
+        // Missing space after punctuation
+        const missingSpaceAfterPunct = (text.match(/[.!?,;:][a-zA-Z]/g) || []);
+        if (missingSpaceAfterPunct.length > 0) {
+            issues.push({
+                type: 'Missing space after punctuation',
+                count: missingSpaceAfterPunct.length,
+                severity: 'medium',
+                category: 'formatting',
+                examples: missingSpaceAfterPunct.slice(0, 3)
+            });
+        }
+        
+        return issues;
+    }
+
+    // Fix formatting issues
+    function fixFormatting(text) {
+        let fixed = text;
+        
+        // Fix multiple consecutive spaces
+        fixed = fixed.replace(/  +/g, ' ');
+        
+        // Fix missing space after punctuation (but not in URLs or numbers)
+        fixed = fixed.replace(/([.!?,;:])([a-zA-Z])/g, (match, punct, letter) => {
+            // Don't fix if it looks like a URL or decimal
+            if (punct === '.' && /\d/.test(letter)) return match;
+            return punct + ' ' + letter;
+        });
+        
+        // Trim whitespace from lines
+        fixed = fixed.split('\n').map(line => line.trim()).join('\n');
+        
+        // Normalize paragraph breaks (ensure double newlines between paragraphs)
+        fixed = fixed.replace(/\n{3,}/g, '\n\n');
+        
+        // Add paragraph breaks for wall of text (heuristic: after ~100 words if no breaks)
+        const paragraphs = fixed.split(/\n\s*\n/).filter(p => p.trim());
+        if (paragraphs.length === 1 && fixed.split(/\s+/).length > 100) {
+            // Try to break at sentence boundaries roughly every 80-100 words
+            const sentences = fixed.split(/(?<=[.!?])\s+/);
+            let currentParagraph = [];
+            let currentWordCount = 0;
+            const newParagraphs = [];
+            
+            for (const sentence of sentences) {
+                const sentenceWords = sentence.split(/\s+/).length;
+                currentParagraph.push(sentence);
+                currentWordCount += sentenceWords;
+                
+                if (currentWordCount >= 80) {
+                    newParagraphs.push(currentParagraph.join(' '));
+                    currentParagraph = [];
+                    currentWordCount = 0;
+                }
+            }
+            
+            if (currentParagraph.length > 0) {
+                newParagraphs.push(currentParagraph.join(' '));
+            }
+            
+            if (newParagraphs.length > 1) {
+                fixed = newParagraphs.join('\n\n');
+            }
+        }
+        
+        return fixed;
+    }
+
     function detectSlop(text) {
         const issues = [];
         const categoryStats = {};
 
+        // Check slop patterns
         for (const pattern of SLOP_PATTERNS) {
             const matches = text.match(pattern.pattern);
             if (matches) {
@@ -538,6 +675,13 @@ Return ONLY the generated content. No explanations, no meta-commentary, no "Here
                 }
             }
         }
+        
+        // Formatting checks
+        const formattingIssues = checkFormatting(text);
+        issues.push(...formattingIssues);
+        formattingIssues.forEach(issue => {
+            categoryStats['formatting'] = (categoryStats['formatting'] || 0) + issue.count;
+        });
         
         // Calculate overall slop score (0-100, lower is better)
         const criticalCount = issues.filter(i => i.severity === 'critical').reduce((sum, i) => sum + i.count, 0);
@@ -635,10 +779,12 @@ Return ONLY the generated content. No explanations, no meta-commentary, no "Here
             fixesApplied.push('Fixed excessive ellipses');
         }
         
-        // Clean up spacing issues from fixes
-        fixed = fixed.replace(/\s+/g, ' ').trim();
-        fixed = fixed.replace(/\s+([.,!?])/g, '$1');
-        fixed = fixed.replace(/([.,!?])(?=[A-Za-z])/g, '$1 ');
+        // Apply formatting fixes
+        const originalFormatting = fixed;
+        fixed = fixFormatting(fixed);
+        if (fixed !== originalFormatting) {
+            fixesApplied.push('Fixed formatting issues');
+        }
         
         return {
             text: fixed,

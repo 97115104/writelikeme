@@ -41,7 +41,13 @@ The heart of Write Like Me is its **comprehensive AI pattern detection system** 
 - Hedge word clusters (perhaps, maybe, might)
 - Filler adjectives (various, numerous, significant)
 
-Generated text receives a **quality score from 0-100** showing how authentic it sounds. Text with critical issues is automatically rewritten to remove AI patterns while preserving your voice.
+**Formatting Issues:**
+- Wall of text without paragraph breaks
+- Very long paragraphs (150+ words)
+- Excessive whitespace and spacing issues
+- Extra long sentences (50+ words)
+
+Generated text receives a **quality score from 0-100** showing how authentic it sounds. Text with critical or formatting issues is automatically fixed or rewritten to remove AI patterns while preserving your voice.
 
 ### Writing Profile Analysis
 
@@ -86,6 +92,36 @@ After generating content for social media, share directly:
 
 If your prompt mentioned a URL, it's automatically appended for clean link sharing.
 
+### GitHub Repo Detection
+
+GitHub repository URLs in your prompt are automatically detected. The tool fetches:
+- README content
+- Repository metadata (description, language, stars)
+
+This provides rich technical context when generating content about code projects.
+
+### Style Sketch
+
+Based on your prompt content, the tool detects and suggests relevant tones:
+- **Accessible** — General audience, explains technical concepts simply
+- **Technical** — Precise, detailed terminology for expert readers
+- **Casual** — Relaxed, conversational language
+- **Professional** — Polished, business-appropriate
+- **Somber** — Gentle, emotionally measured for difficult topics
+- **Empathetic** — Shows understanding and compassion
+- **Upbeat** — Energetic, positive, celebratory
+- **Witty** — Light humor and clever observations
+- **Persuasive** — Compelling, action-oriented
+- **Educational** — Clear explanations, step-by-step
+- **Narrative** — Story structure with vivid details
+- **Analytical** — Data-driven, logical reasoning
+- **Concise** — Ultra-brief, every word earns its place
+- **Thorough** — Comprehensive with full context
+
+Toggle tones on/off to guide generation while preserving your core voice. Hover for descriptions.
+
+**Style Studio**: Click "Open Style Studio" for the full builder with all styles organized by category. Add custom feedback like "Make it more confident" to further guide generation. After generating, click "Edit Style" to adjust and regenerate.
+
 ### Profile Persistence
 
 - **Save to Browser** — Your profile saves to localStorage
@@ -97,9 +133,9 @@ If your prompt mentioned a URL, it's automatically appended for clean link shari
 ## Input Methods
 
 - **Paste** — Copy and paste writing samples directly. Multiple samples separated by blank lines.
-- **URL** — Enter URLs to blog posts/articles. Supports bulk URLs (one per line).
+- **URL** — Enter URLs to blog posts/articles. Supports bulk URLs (one per line). GitHub repo URLs are auto-detected and fetched with README + metadata.
 - **Upload** — Upload .txt or .md files. Supports batch uploads.
-- **Load Profile** — Paste a previously saved profile JSON to skip analysis.
+- **Load Profile** — Paste or upload a previously saved profile JSON to skip analysis.
 
 ## Content Types
 
