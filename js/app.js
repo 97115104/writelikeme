@@ -2727,6 +2727,9 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         const profile = state.profile;
         let html = '';
 
+        // Similar authors placeholder (will be filled async)
+        html += `<div id="similar-authors-modal" class="similar-authors-modal"></div>`;
+
         // Header with Dreyfus-based mastery metrics
         const masteryLabel = profile.mastery_label || getMasteryFromComplexity(profile.complexity_score);
         const technicalLevel = profile.technical_level || profile.reading_level || 'Not determined';
@@ -2903,6 +2906,12 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         html += '</div>';
 
         elements.fullProfileContent.innerHTML = html;
+        
+        // Render similar authors in modal (async)
+        if (typeof UIRenderer.renderSimilarAuthorsInModal === 'function') {
+            UIRenderer.renderSimilarAuthorsInModal(profile);
+        }
+        
         showModal('full-profile-modal');
     }
     

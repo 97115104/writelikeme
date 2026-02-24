@@ -1,0 +1,761 @@
+{
+  "authors": [
+    {
+      "id": "tolkien",
+      "name": "J.R.R. Tolkien",
+      "genre": "Fantasy",
+      "era": "20th Century",
+      "notable_works": ["The Lord of the Rings", "The Hobbit", "The Silmarillion"],
+      "style": {
+        "formality": "formal",
+        "descriptiveness": "highly descriptive",
+        "directness": "indirect",
+        "perspective": "third person"
+      },
+      "tone": {
+        "primary": "epic",
+        "secondary": ["mythic", "nostalgic", "reverent"],
+        "emotional_register": "elevated"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["doom", "shadow", "ancient", "fell", "kindred", "twilight", "realm", "forsaken"]
+      },
+      "structure": {
+        "sentence_length": "long",
+        "paragraph_style": "detailed",
+        "pacing": "deliberate"
+      },
+      "markers": {
+        "uses_archaic_language": true,
+        "world_building_focus": true,
+        "poetic_prose": true,
+        "invented_languages": true
+      },
+      "description": "Known for elaborate world-building, archaic prose rhythms, and a mythological grandeur that evokes ancient sagas."
+    },
+    {
+      "id": "grrm",
+      "name": "George R.R. Martin",
+      "genre": "Fantasy",
+      "era": "Contemporary",
+      "notable_works": ["A Game of Thrones", "A Clash of Kings", "A Storm of Swords"],
+      "style": {
+        "formality": "moderate",
+        "descriptiveness": "highly descriptive",
+        "directness": "direct",
+        "perspective": "third person limited"
+      },
+      "tone": {
+        "primary": "gritty",
+        "secondary": ["cynical", "suspenseful", "melancholic"],
+        "emotional_register": "intense"
+      },
+      "vocabulary": {
+        "complexity": "moderate",
+        "characteristic_words": ["words", "winter", "blood", "honor", "sword", "lord", "feast", "bannermen"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "dense",
+        "pacing": "deliberate"
+      },
+      "markers": {
+        "multiple_pov": true,
+        "morally_gray_characters": true,
+        "detailed_descriptions": true,
+        "political_intrigue": true
+      },
+      "description": "Known for morally complex characters, unflinching violence, political intrigue, and subverting fantasy tropes."
+    },
+    {
+      "id": "rothfuss",
+      "name": "Patrick Rothfuss",
+      "genre": "Fantasy",
+      "era": "Contemporary",
+      "notable_works": ["The Name of the Wind", "The Wise Man's Fear"],
+      "style": {
+        "formality": "lyrical",
+        "descriptiveness": "highly descriptive",
+        "directness": "indirect",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "poetic",
+        "secondary": ["nostalgic", "melancholic", "romantic"],
+        "emotional_register": "intimate"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["silence", "wind", "music", "name", "hands", "fire", "beautiful", "truth"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "flowing",
+        "pacing": "measured"
+      },
+      "markers": {
+        "frame_narrative": true,
+        "unreliable_narrator": true,
+        "musical_prose": true,
+        "philosophical_tangents": true
+      },
+      "description": "Known for lyrical, musical prose, philosophical depth, and an intimate first-person voice that blends beauty with melancholy."
+    },
+    {
+      "id": "rowling",
+      "name": "J.K. Rowling",
+      "genre": "Fantasy",
+      "era": "Contemporary",
+      "notable_works": ["Harry Potter series", "The Casual Vacancy", "Cormoran Strike series"],
+      "style": {
+        "formality": "casual",
+        "descriptiveness": "moderate",
+        "directness": "direct",
+        "perspective": "third person limited"
+      },
+      "tone": {
+        "primary": "whimsical",
+        "secondary": ["adventurous", "warm", "witty"],
+        "emotional_register": "accessible"
+      },
+      "vocabulary": {
+        "complexity": "accessible",
+        "characteristic_words": ["magic", "wand", "spell", "dark", "brilliant", "peculiar", "rather", "properly"]
+      },
+      "structure": {
+        "sentence_length": "medium",
+        "paragraph_style": "brisk",
+        "pacing": "fast"
+      },
+      "markers": {
+        "british_voice": true,
+        "clever_wordplay": true,
+        "coming_of_age": true,
+        "mystery_elements": true
+      },
+      "description": "Known for accessible, witty prose with British charm, clever plotting, and a gift for memorable character names."
+    },
+    {
+      "id": "king",
+      "name": "Stephen King",
+      "genre": "Horror",
+      "era": "Contemporary",
+      "notable_works": ["The Shining", "It", "The Stand", "Misery"],
+      "style": {
+        "formality": "casual",
+        "descriptiveness": "detailed",
+        "directness": "direct",
+        "perspective": "varied"
+      },
+      "tone": {
+        "primary": "conversational",
+        "secondary": ["suspenseful", "nostalgic", "dark"],
+        "emotional_register": "visceral"
+      },
+      "vocabulary": {
+        "complexity": "accessible",
+        "characteristic_words": ["dark", "dead", "cold", "something", "somehow", "maybe", "jesus", "christ"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "punchy",
+        "pacing": "propulsive"
+      },
+      "markers": {
+        "colloquial_voice": true,
+        "pop_culture_references": true,
+        "small_town_america": true,
+        "psychological_depth": true
+      },
+      "description": "Known for conversational prose, relatable everyman characters, psychological horror, and an uncanny ability to tap into universal fears."
+    },
+    {
+      "id": "lovecraft",
+      "name": "H.P. Lovecraft",
+      "genre": "Horror",
+      "era": "Early 20th Century",
+      "notable_works": ["The Call of Cthulhu", "At the Mountains of Madness", "The Shadow over Innsmouth"],
+      "style": {
+        "formality": "formal",
+        "descriptiveness": "highly descriptive",
+        "directness": "indirect",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "dread",
+        "secondary": ["cosmic", "scholarly", "obsessive"],
+        "emotional_register": "anxious"
+      },
+      "vocabulary": {
+        "complexity": "antiquated",
+        "characteristic_words": ["eldritch", "cyclopean", "nameless", "blasphemous", "accursed", "gibbous", "squamous", "rugose"]
+      },
+      "structure": {
+        "sentence_length": "long",
+        "paragraph_style": "dense",
+        "pacing": "building"
+      },
+      "markers": {
+        "cosmic_horror": true,
+        "unreliable_narrator": true,
+        "academic_framing": true,
+        "indescribable_horrors": true
+      },
+      "description": "Known for cosmic horror, dense academic prose, unnameable terrors, and a sense of humanity's insignificance in the universe."
+    },
+    {
+      "id": "faulkner",
+      "name": "William Faulkner",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["The Sound and the Fury", "As I Lay Dying", "Absalom, Absalom!"],
+      "style": {
+        "formality": "literary",
+        "descriptiveness": "highly descriptive",
+        "directness": "indirect",
+        "perspective": "experimental"
+      },
+      "tone": {
+        "primary": "tragic",
+        "secondary": ["gothic", "stream-of-consciousness", "haunted"],
+        "emotional_register": "intense"
+      },
+      "vocabulary": {
+        "complexity": "complex",
+        "characteristic_words": ["dust", "doom", "blood", "grief", "silence", "twilight", "outrage", "endure"]
+      },
+      "structure": {
+        "sentence_length": "very long",
+        "paragraph_style": "stream-of-consciousness",
+        "pacing": "dense"
+      },
+      "markers": {
+        "southern_gothic": true,
+        "non_linear_narrative": true,
+        "multiple_perspectives": true,
+        "long_sentences": true
+      },
+      "description": "Known for dense, labyrinthine sentences, Southern Gothic atmosphere, and groundbreaking stream-of-consciousness technique."
+    },
+    {
+      "id": "toole",
+      "name": "John Kennedy Toole",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["A Confederacy of Dunces", "The Neon Bible"],
+      "style": {
+        "formality": "satirical",
+        "descriptiveness": "vivid",
+        "directness": "direct",
+        "perspective": "third person"
+      },
+      "tone": {
+        "primary": "satirical",
+        "secondary": ["absurdist", "witty", "tragicomic"],
+        "emotional_register": "comedic"
+      },
+      "vocabulary": {
+        "complexity": "varied",
+        "characteristic_words": ["valve", "theology", "geometry", "abomination", "worldview", "proper", "degeneracy", "fortuna"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "dramatic",
+        "pacing": "comedic"
+      },
+      "markers": {
+        "unreliable_narrator": true,
+        "social_satire": true,
+        "dialect_writing": true,
+        "picaresque": true
+      },
+      "description": "Known for biting social satire, unforgettable eccentric characters, and a tragicomic vision of New Orleans society."
+    },
+    {
+      "id": "hemingway",
+      "name": "Ernest Hemingway",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["The Old Man and the Sea", "A Farewell to Arms", "The Sun Also Rises"],
+      "style": {
+        "formality": "spare",
+        "descriptiveness": "minimal",
+        "directness": "very direct",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "understated",
+        "secondary": ["stoic", "melancholic", "masculine"],
+        "emotional_register": "restrained"
+      },
+      "vocabulary": {
+        "complexity": "simple",
+        "characteristic_words": ["good", "fine", "true", "clean", "cold", "drunk", "dark", "nothing"]
+      },
+      "structure": {
+        "sentence_length": "short",
+        "paragraph_style": "sparse",
+        "pacing": "clipped"
+      },
+      "markers": {
+        "iceberg_theory": true,
+        "short_sentences": true,
+        "minimal_adjectives": true,
+        "dialogue_heavy": true
+      },
+      "description": "Known for spare, economical prose, the iceberg theory of omission, and powerful emotion conveyed through restraint."
+    },
+    {
+      "id": "woolf",
+      "name": "Virginia Woolf",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["Mrs Dalloway", "To the Lighthouse", "Orlando"],
+      "style": {
+        "formality": "literary",
+        "descriptiveness": "impressionistic",
+        "directness": "indirect",
+        "perspective": "stream-of-consciousness"
+      },
+      "tone": {
+        "primary": "introspective",
+        "secondary": ["poetic", "melancholic", "luminous"],
+        "emotional_register": "sensitive"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["moment", "life", "waves", "light", "silence", "beauty", "consciousness", "time"]
+      },
+      "structure": {
+        "sentence_length": "flowing",
+        "paragraph_style": "impressionistic",
+        "pacing": "fluid"
+      },
+      "markers": {
+        "stream_of_consciousness": true,
+        "interior_monologue": true,
+        "lyrical_prose": true,
+        "feminist_themes": true
+      },
+      "description": "Known for luminous stream-of-consciousness prose, deep psychological insight, and capturing the ephemeral nature of experience."
+    },
+    {
+      "id": "poe",
+      "name": "Edgar Allan Poe",
+      "genre": "Horror",
+      "era": "19th Century",
+      "notable_works": ["The Raven", "The Tell-Tale Heart", "The Fall of the House of Usher"],
+      "style": {
+        "formality": "formal",
+        "descriptiveness": "atmospheric",
+        "directness": "indirect",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "macabre",
+        "secondary": ["feverish", "obsessive", "melancholic"],
+        "emotional_register": "heightened"
+      },
+      "vocabulary": {
+        "complexity": "ornate",
+        "characteristic_words": ["darkness", "nevermore", "hideous", "terror", "death", "madness", "soul", "tomb"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "rhythmic",
+        "pacing": "building"
+      },
+      "markers": {
+        "unreliable_narrator": true,
+        "gothic_atmosphere": true,
+        "psychological_horror": true,
+        "poetic_rhythm": true
+      },
+      "description": "Known for gothic atmosphere, psychological terror, musical prose, and narrators on the edge of madness."
+    },
+    {
+      "id": "austen",
+      "name": "Jane Austen",
+      "genre": "Literary Fiction",
+      "era": "19th Century",
+      "notable_works": ["Pride and Prejudice", "Emma", "Sense and Sensibility"],
+      "style": {
+        "formality": "formal",
+        "descriptiveness": "restrained",
+        "directness": "indirect",
+        "perspective": "third person"
+      },
+      "tone": {
+        "primary": "witty",
+        "secondary": ["ironic", "warm", "observant"],
+        "emotional_register": "controlled"
+      },
+      "vocabulary": {
+        "complexity": "elegant",
+        "characteristic_words": ["sensible", "agreeable", "handsome", "amiable", "attachment", "fortune", "propriety", "civility"]
+      },
+      "structure": {
+        "sentence_length": "balanced",
+        "paragraph_style": "elegant",
+        "pacing": "measured"
+      },
+      "markers": {
+        "free_indirect_discourse": true,
+        "social_commentary": true,
+        "romantic_irony": true,
+        "mannered_dialogue": true
+      },
+      "description": "Known for razor-sharp social wit, ironic narration, and keen observations of Regency-era manners and relationships."
+    },
+    {
+      "id": "pratchett",
+      "name": "Terry Pratchett",
+      "genre": "Fantasy",
+      "era": "Contemporary",
+      "notable_works": ["Discworld series", "Good Omens", "Nation"],
+      "style": {
+        "formality": "casual",
+        "descriptiveness": "vivid",
+        "directness": "direct",
+        "perspective": "third person"
+      },
+      "tone": {
+        "primary": "satirical",
+        "secondary": ["witty", "humanist", "absurdist"],
+        "emotional_register": "warm"
+      },
+      "vocabulary": {
+        "complexity": "accessible",
+        "characteristic_words": ["death", "magic", "turtle", "wizard", "copper", "gods", "human", "story"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "conversational",
+        "pacing": "brisk"
+      },
+      "markers": {
+        "footnotes": true,
+        "parody": true,
+        "philosophical_depth": true,
+        "british_humor": true
+      },
+      "description": "Known for brilliant satirical wit, humanist philosophy wrapped in absurdist humor, and sharp observations on human nature."
+    },
+    {
+      "id": "sanderson",
+      "name": "Brandon Sanderson",
+      "genre": "Fantasy",
+      "era": "Contemporary",
+      "notable_works": ["Mistborn", "The Stormlight Archive", "Elantris"],
+      "style": {
+        "formality": "moderate",
+        "descriptiveness": "detailed",
+        "directness": "direct",
+        "perspective": "third person limited"
+      },
+      "tone": {
+        "primary": "epic",
+        "secondary": ["hopeful", "analytical", "determined"],
+        "emotional_register": "earnest"
+      },
+      "vocabulary": {
+        "complexity": "moderate",
+        "characteristic_words": ["honor", "storm", "power", "metal", "light", "strength", "trust", "journey"]
+      },
+      "structure": {
+        "sentence_length": "medium",
+        "paragraph_style": "clear",
+        "pacing": "methodical"
+      },
+      "markers": {
+        "hard_magic_systems": true,
+        "detailed_worldbuilding": true,
+        "plot_twists": true,
+        "heroic_themes": true
+      },
+      "description": "Known for intricate magic systems, detailed world-building, satisfying plot twists, and heroic themes of hope and determination."
+    },
+    {
+      "id": "gaiman",
+      "name": "Neil Gaiman",
+      "genre": "Fantasy",
+      "era": "Contemporary",
+      "notable_works": ["American Gods", "Sandman", "Coraline", "Neverwhere"],
+      "style": {
+        "formality": "conversational",
+        "descriptiveness": "evocative",
+        "directness": "indirect",
+        "perspective": "varied"
+      },
+      "tone": {
+        "primary": "mythic",
+        "secondary": ["whimsical", "dark", "dreamlike"],
+        "emotional_register": "enchanting"
+      },
+      "vocabulary": {
+        "complexity": "accessible",
+        "characteristic_words": ["dream", "shadow", "story", "dark", "magic", "door", "name", "moon"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "flowing",
+        "pacing": "dreamlike"
+      },
+      "markers": {
+        "fairy_tale_structure": true,
+        "myth_reinvention": true,
+        "dark_whimsy": true,
+        "storytelling_meta": true
+      },
+      "description": "Known for blending myth and modernity, dark whimsy, accessible yet evocative prose, and stories about stories."
+    },
+    {
+      "id": "le_guin",
+      "name": "Ursula K. Le Guin",
+      "genre": "Science Fiction/Fantasy",
+      "era": "20th Century",
+      "notable_works": ["A Wizard of Earthsea", "The Left Hand of Darkness", "The Dispossessed"],
+      "style": {
+        "formality": "literary",
+        "descriptiveness": "precise",
+        "directness": "thoughtful",
+        "perspective": "varied"
+      },
+      "tone": {
+        "primary": "philosophical",
+        "secondary": ["meditative", "humanist", "questioning"],
+        "emotional_register": "contemplative"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["balance", "shadow", "name", "light", "truth", "silence", "wind", "power"]
+      },
+      "structure": {
+        "sentence_length": "balanced",
+        "paragraph_style": "thoughtful",
+        "pacing": "measured"
+      },
+      "markers": {
+        "philosophical_themes": true,
+        "anthropological_worldbuilding": true,
+        "ethical_exploration": true,
+        "prose_poetry": true
+      },
+      "description": "Known for philosophical depth, anthropological world-building, elegant prose, and explorations of identity and society."
+    },
+    {
+      "id": "mccarthy",
+      "name": "Cormac McCarthy",
+      "genre": "Literary Fiction",
+      "era": "Contemporary",
+      "notable_works": ["Blood Meridian", "The Road", "No Country for Old Men"],
+      "style": {
+        "formality": "sparse",
+        "descriptiveness": "stark",
+        "directness": "direct",
+        "perspective": "third person"
+      },
+      "tone": {
+        "primary": "bleak",
+        "secondary": ["biblical", "violent", "meditative"],
+        "emotional_register": "intense"
+      },
+      "vocabulary": {
+        "complexity": "biblical",
+        "characteristic_words": ["blood", "dark", "fire", "cold", "dead", "god", "stone", "nothing"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "sparse",
+        "pacing": "relentless"
+      },
+      "markers": {
+        "no_quotation_marks": true,
+        "minimal_punctuation": true,
+        "biblical_language": true,
+        "violence_as_theme": true
+      },
+      "description": "Known for stark, biblical prose, minimal punctuation, unflinching violence, and meditations on good and evil."
+    },
+    {
+      "id": "vonnegut",
+      "name": "Kurt Vonnegut",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["Slaughterhouse-Five", "Cat's Cradle", "Breakfast of Champions"],
+      "style": {
+        "formality": "casual",
+        "descriptiveness": "minimal",
+        "directness": "very direct",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "satirical",
+        "secondary": ["absurdist", "fatalistic", "humanist"],
+        "emotional_register": "ironic"
+      },
+      "vocabulary": {
+        "complexity": "simple",
+        "characteristic_words": ["so it goes", "mustard gas", "everything", "nothing", "time", "war", "death", "story"]
+      },
+      "structure": {
+        "sentence_length": "short",
+        "paragraph_style": "fragmented",
+        "pacing": "staccato"
+      },
+      "markers": {
+        "metafiction": true,
+        "dark_humor": true,
+        "sci_fi_elements": true,
+        "autobiographical": true
+      },
+      "description": "Known for deceptively simple prose, dark humor, absurdist philosophy, and humanist critiques of war and society."
+    },
+    {
+      "id": "fitzgerald",
+      "name": "F. Scott Fitzgerald",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["The Great Gatsby", "Tender Is the Night", "This Side of Paradise"],
+      "style": {
+        "formality": "elegant",
+        "descriptiveness": "lyrical",
+        "directness": "indirect",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "romantic",
+        "secondary": ["melancholic", "nostalgic", "disillusioned"],
+        "emotional_register": "yearning"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["green", "light", "dream", "rich", "beautiful", "lost", "golden", "night"]
+      },
+      "structure": {
+        "sentence_length": "flowing",
+        "paragraph_style": "lyrical",
+        "pacing": "atmospheric"
+      },
+      "markers": {
+        "jazz_age_setting": true,
+        "unreliable_narrator": true,
+        "symbolism": true,
+        "tragic_romance": true
+      },
+      "description": "Known for luminous, romantic prose, the tragedy of the American Dream, and capturing the glitter and despair of the Jazz Age."
+    },
+    {
+      "id": "christie",
+      "name": "Agatha Christie",
+      "genre": "Mystery",
+      "era": "20th Century",
+      "notable_works": ["Murder on the Orient Express", "And Then There Were None", "The Murder of Roger Ackroyd"],
+      "style": {
+        "formality": "moderate",
+        "descriptiveness": "efficient",
+        "directness": "direct",
+        "perspective": "third person"
+      },
+      "tone": {
+        "primary": "matter-of-fact",
+        "secondary": ["suspenseful", "cozy", "observant"],
+        "emotional_register": "controlled"
+      },
+      "vocabulary": {
+        "complexity": "accessible",
+        "characteristic_words": ["murder", "poison", "suspect", "detective", "evidence", "alibi", "curious", "quite"]
+      },
+      "structure": {
+        "sentence_length": "medium",
+        "paragraph_style": "efficient",
+        "pacing": "brisk"
+      },
+      "markers": {
+        "fair_play_mystery": true,
+        "misdirection": true,
+        "british_setting": true,
+        "twist_endings": true
+      },
+      "description": "Known for ingenious plot construction, fair-play mysteries, memorable detectives, and shocking twist endings."
+    },
+    {
+      "id": "orwell",
+      "name": "George Orwell",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["1984", "Animal Farm", "Down and Out in Paris and London"],
+      "style": {
+        "formality": "plain",
+        "descriptiveness": "precise",
+        "directness": "very direct",
+        "perspective": "third person"
+      },
+      "tone": {
+        "primary": "urgent",
+        "secondary": ["political", "clear-eyed", "pessimistic"],
+        "emotional_register": "controlled"
+      },
+      "vocabulary": {
+        "complexity": "plain",
+        "characteristic_words": ["power", "truth", "freedom", "war", "peace", "love", "hate", "thought"]
+      },
+      "structure": {
+        "sentence_length": "short",
+        "paragraph_style": "clear",
+        "pacing": "direct"
+      },
+      "markers": {
+        "political_allegory": true,
+        "plain_language": true,
+        "dystopian": true,
+        "journalistic": true
+      },
+      "description": "Known for crystal-clear prose, political allegory, prescient dystopian vision, and championing plain English over pretension."
+    },
+    {
+      "id": "atwood",
+      "name": "Margaret Atwood",
+      "genre": "Literary Fiction",
+      "era": "Contemporary",
+      "notable_works": ["The Handmaid's Tale", "Oryx and Crake", "The Blind Assassin"],
+      "style": {
+        "formality": "literary",
+        "descriptiveness": "precise",
+        "directness": "indirect",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "sardonic",
+        "secondary": ["observant", "dark", "feminist"],
+        "emotional_register": "controlled"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["body", "hand", "red", "night", "word", "story", "time", "woman"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "precise",
+        "pacing": "measured"
+      },
+      "markers": {
+        "dystopian": true,
+        "feminist_themes": true,
+        "unreliable_narrator": true,
+        "dark_humor": true
+      },
+      "description": "Known for sharp, sardonic prose, feminist dystopias, dark humor, and unflinching examinations of power and gender."
+    }
+  ],
+  "matching_weights": {
+    "formality": 1.5,
+    "tone_primary": 2.0,
+    "tone_secondary": 1.0,
+    "vocabulary_complexity": 1.5,
+    "sentence_length": 1.2,
+    "directness": 1.0,
+    "emotional_register": 1.3
+  }
+}

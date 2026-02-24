@@ -1,5 +1,367 @@
 const UIRenderer = (() => {
+    // Authors data cache
+    let authorsData = null;
+    let authorsLoading = false;
+    let authorsLoadPromise = null;
+
+    // Load authors data from JSON
+    async function loadAuthors() {
+        if (authorsData) return authorsData;
+        if (authorsLoadPromise) return authorsLoadPromise;
+        
+        authorsLoading = true;
+        console.log('[WriteMe] Loading authors data...');
+        authorsLoadPromise = fetch('data/authors.json')
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                authorsData = data;
+                authorsLoading = false;
+                console.log('[WriteMe] Loaded', data.authors?.length || 0, 'authors');
+                return data;
+            })
+            .catch(err => {
+                console.warn('[WriteMe] Failed to load authors data:', err);
+                authorsLoading = false;
+                return null;
+            });
+        
+        return authorsLoadPromise;
+    }
+
+    // Calculate similarity score between user profile and author
+    function calculateAuthorSimilarity(profile, author, weights) {
+        let score = 0;
+        let maxScore = 0;
+
+        // Formality match
+        if (profile.style?.formality && author.style?.formality) {
+            maxScore += weights.formality;
+            if (normalizeStyle(profile.style.formality) === normalizeStyle(author.style.formality)) {
+                score += weights.formality;
+            } else if (isCloseMatch(profile.style.formality, author.style.formality, 'formality')) {
+                score += weights.formality * 0.5;
+            }
+        }
+
+        // Primary tone match
+        if (profile.tone?.primary && author.tone?.primary) {
+            maxScore += weights.tone_primary;
+            if (normalizeStyle(profile.tone.primary) === normalizeStyle(author.tone.primary)) {
+                score += weights.tone_primary;
+            } else if (isCloseMatch(profile.tone.primary, author.tone.primary, 'tone')) {
+                score += weights.tone_primary * 0.5;
+            }
+        }
+
+        // Secondary tone match
+        if (profile.tone?.secondary && author.tone?.secondary) {
+            const profileSecondary = Array.isArray(profile.tone.secondary) 
+                ? profile.tone.secondary 
+                : [profile.tone.secondary];
+            const authorSecondary = Array.isArray(author.tone.secondary)
+                ? author.tone.secondary
+                : [author.tone.secondary];
+            
+            maxScore += weights.tone_secondary;
+            const matches = profileSecondary.filter(t => 
+                authorSecondary.some(at => normalizeStyle(t) === normalizeStyle(at))
+            ).length;
+            if (matches > 0) {
+                score += weights.tone_secondary * Math.min(1, matches / 2);
+            }
+        }
+
+        // Vocabulary complexity match
+        if (profile.vocabulary?.complexity && author.vocabulary?.complexity) {
+            maxScore += weights.vocabulary_complexity;
+            if (normalizeStyle(profile.vocabulary.complexity) === normalizeStyle(author.vocabulary.complexity)) {
+                score += weights.vocabulary_complexity;
+            } else if (isCloseMatch(profile.vocabulary.complexity, author.vocabulary.complexity, 'vocabulary')) {
+                score += weights.vocabulary_complexity * 0.5;
+            }
+        }
+
+        // Sentence length match
+        if (profile.structure?.sentence_length && author.structure?.sentence_length) {
+            maxScore += weights.sentence_length;
+            if (normalizeStyle(profile.structure.sentence_length) === normalizeStyle(author.structure.sentence_length)) {
+                score += weights.sentence_length;
+            } else if (isCloseMatch(profile.structure.sentence_length, author.structure.sentence_length, 'length')) {
+                score += weights.sentence_length * 0.5;
+            }
+        }
+
+        // Directness match
+        if (profile.style?.directness && author.style?.directness) {
+            maxScore += weights.directness;
+            if (normalizeStyle(profile.style.directness) === normalizeStyle(author.style.directness)) {
+                score += weights.directness;
+            }
+        }
+
+        // Emotional register match
+        if (profile.tone?.emotional_register && author.tone?.emotional_register) {
+            maxScore += weights.emotional_register;
+            if (normalizeStyle(profile.tone.emotional_register) === normalizeStyle(author.tone.emotional_register)) {
+                score += weights.emotional_register;
+            } else if (isCloseMatch(profile.tone.emotional_register, author.tone.emotional_register, 'register')) {
+                score += weights.emotional_register * 0.5;
+            }
+        }
+
+        return maxScore > 0 ? score / maxScore : 0;
+    }
+
+    // Normalize style strings for comparison
+    function normalizeStyle(str) {
+        if (!str) return '';
+        return str.toLowerCase().trim().replace(/[-_]/g, ' ');
+    }
+
+    // Check if two style values are close matches
+    function isCloseMatch(value1, value2, category) {
+        const v1 = normalizeStyle(value1);
+        const v2 = normalizeStyle(value2);
+
+        const closeMatches = {
+            formality: [
+                ['casual', 'conversational', 'informal'],
+                ['formal', 'literary', 'academic'],
+                ['moderate', 'balanced']
+            ],
+            tone: [
+                ['conversational', 'casual', 'friendly', 'warm'],
+                ['epic', 'mythic', 'grand', 'heroic'],
+                ['dark', 'gritty', 'bleak', 'macabre'],
+                ['witty', 'satirical', 'humorous', 'ironic'],
+                ['poetic', 'lyrical', 'romantic'],
+                ['introspective', 'philosophical', 'meditative']
+            ],
+            vocabulary: [
+                ['simple', 'accessible', 'plain'],
+                ['sophisticated', 'complex', 'ornate', 'antiquated'],
+                ['moderate', 'varied', 'balanced']
+            ],
+            length: [
+                ['short', 'brief', 'clipped'],
+                ['medium', 'moderate', 'balanced', 'varied'],
+                ['long', 'flowing', 'very long']
+            ],
+            register: [
+                ['passionate', 'intense', 'heightened', 'visceral'],
+                ['restrained', 'controlled', 'understated'],
+                ['warm', 'intimate', 'accessible', 'friendly'],
+                ['elevated', 'grand', 'epic']
+            ]
+        };
+
+        const groups = closeMatches[category] || [];
+        for (const group of groups) {
+            if (group.includes(v1) && group.includes(v2)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Find similar authors for a profile
+    async function findSimilarAuthors(profile, maxResults = 3) {
+        const data = await loadAuthors();
+        if (!data || !data.authors) return [];
+
+        const weights = data.matching_weights || {
+            formality: 1.5,
+            tone_primary: 2.0,
+            tone_secondary: 1.0,
+            vocabulary_complexity: 1.5,
+            sentence_length: 1.2,
+            directness: 1.0,
+            emotional_register: 1.3
+        };
+
+        const scoredAuthors = data.authors.map(author => ({
+            author,
+            score: calculateAuthorSimilarity(profile, author, weights)
+        }));
+
+        // Sort by score descending
+        scoredAuthors.sort((a, b) => b.score - a.score);
+
+        // Log top scores for debugging
+        console.log('[WriteMe] Top author matches:', scoredAuthors.slice(0, 5).map(s => `${s.author.name}: ${(s.score * 100).toFixed(0)}%`));
+
+        // Return top matches with score above threshold (lowered to 0.15 for better matches)
+        const threshold = 0.15;
+        return scoredAuthors
+            .filter(item => item.score >= threshold)
+            .slice(0, maxResults);
+    }
+
+    // Find shared traits between profile and author
+    function findSharedTraits(profile, author) {
+        const traits = [];
+
+        // Check formality
+        if (profile.style?.formality && author.style?.formality) {
+            if (normalizeStyle(profile.style.formality) === normalizeStyle(author.style.formality)) {
+                traits.push(profile.style.formality + ' style');
+            }
+        }
+
+        // Check tone
+        if (profile.tone?.primary && author.tone?.primary) {
+            if (normalizeStyle(profile.tone.primary) === normalizeStyle(author.tone.primary)) {
+                traits.push(profile.tone.primary + ' tone');
+            }
+        }
+
+        // Check secondary tones
+        if (profile.tone?.secondary && author.tone?.secondary) {
+            const profileSecondary = Array.isArray(profile.tone.secondary) 
+                ? profile.tone.secondary.map(normalizeStyle)
+                : [normalizeStyle(profile.tone.secondary)];
+            const authorSecondary = Array.isArray(author.tone.secondary)
+                ? author.tone.secondary.map(normalizeStyle)
+                : [normalizeStyle(author.tone.secondary)];
+            
+            for (const tone of profileSecondary) {
+                if (authorSecondary.includes(tone) && !traits.some(t => t.includes(tone))) {
+                    traits.push(tone + ' undertones');
+                }
+            }
+        }
+
+        // Check vocabulary
+        if (profile.vocabulary?.complexity && author.vocabulary?.complexity) {
+            if (normalizeStyle(profile.vocabulary.complexity) === normalizeStyle(author.vocabulary.complexity)) {
+                traits.push(profile.vocabulary.complexity + ' vocabulary');
+            }
+        }
+
+        // Check sentence structure
+        if (profile.structure?.sentence_length && author.structure?.sentence_length) {
+            if (normalizeStyle(profile.structure.sentence_length) === normalizeStyle(author.structure.sentence_length)) {
+                traits.push(profile.structure.sentence_length + ' sentences');
+            }
+        }
+
+        // Check directness
+        if (profile.style?.directness && author.style?.directness) {
+            if (normalizeStyle(profile.style.directness) === normalizeStyle(author.style.directness)) {
+                traits.push(profile.style.directness + ' approach');
+            }
+        }
+
+        return traits.slice(0, 4); // Limit to 4 traits
+    }
+
+    // Render similar authors section
+    async function renderSimilarAuthors(profile) {
+        console.log('[WriteMe] renderSimilarAuthors called');
+        const container = document.getElementById('similar-authors');
+        const content = document.getElementById('similar-authors-content');
+        
+        if (!container || !content) {
+            console.log('[WriteMe] Similar authors container not found');
+            return;
+        }
+
+        // Show loading state
+        container.classList.remove('hidden');
+        content.innerHTML = '<div class="similar-authors-loading">Finding similar authors...</div>';
+
+        try {
+            const matches = await findSimilarAuthors(profile, 2);
+            console.log('[WriteMe] Similar authors matches:', matches.length);
+
+            if (matches.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            let html = '';
+            for (const match of matches) {
+                const author = match.author;
+                const sharedTraits = findSharedTraits(profile, author);
+                const confidence = Math.round(match.score * 100);
+
+                html += `
+                    <div class="similar-author-card">
+                        <div class="similar-author-main">
+                            <span class="similar-author-name">${escapeHtml(author.name)}</span>
+                            <span class="similar-author-genre">${escapeHtml(author.genre)}</span>
+                        </div>
+                        ${sharedTraits.length > 0 ? `
+                            <div class="similar-author-traits">
+                                <span class="traits-label">You both share:</span>
+                                <span class="traits-list">${sharedTraits.map(t => escapeHtml(t)).join(', ')}</span>
+                            </div>
+                        ` : ''}
+                        <div class="similar-author-desc">${escapeHtml(author.description)}</div>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = html;
+        } catch (err) {
+            console.error('[WriteMe] Error finding similar authors:', err);
+            container.classList.add('hidden');
+        }
+    }
+
+    // Render similar authors in modal
+    async function renderSimilarAuthorsInModal(profile) {
+        const container = document.getElementById('similar-authors-modal');
+        if (!container) return;
+
+        try {
+            const matches = await findSimilarAuthors(profile, 2);
+
+            if (matches.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="similar-authors">';
+            html += '<div class="similar-authors-header"><span class="similar-authors-label">You Write Like</span></div>';
+            html += '<div class="similar-authors-content">';
+            
+            for (const match of matches) {
+                const author = match.author;
+                const sharedTraits = findSharedTraits(profile, author);
+
+                html += `
+                    <div class="similar-author-card">
+                        <div class="similar-author-main">
+                            <span class="similar-author-name">${escapeHtml(author.name)}</span>
+                            <span class="similar-author-genre">${escapeHtml(author.genre)}</span>
+                        </div>
+                        ${sharedTraits.length > 0 ? `
+                            <div class="similar-author-traits">
+                                <span class="traits-label">You both share:</span>
+                                <span class="traits-list">${sharedTraits.map(t => escapeHtml(t)).join(', ')}</span>
+                            </div>
+                        ` : ''}
+                        <div class="similar-author-desc">${escapeHtml(author.description)}</div>
+                    </div>
+                `;
+            }
+            
+            html += '</div></div>';
+            container.innerHTML = html;
+        } catch (err) {
+            console.error('[WriteMe] Error rendering similar authors in modal:', err);
+            container.innerHTML = '';
+        }
+    }
+
     function renderProfile(profile, container) {
+        // Find and display similar authors (async, non-blocking)
+        renderSimilarAuthors(profile);
+
         // Mastery level (Dreyfus-based) - fallback to complexity-based estimation
         const masteryEl = document.getElementById('mastery-level');
         if (masteryEl) {
@@ -399,6 +761,7 @@ const UIRenderer = (() => {
 
     return {
         renderProfile,
+        renderSimilarAuthorsInModal,
         renderSamplesList,
         renderSlopCheck,
         showLoading,
