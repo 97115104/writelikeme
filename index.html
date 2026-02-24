@@ -9,6 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
     <h1>Write Like Me</h1>
@@ -304,8 +305,13 @@ https://example.com/another-post" rows="6"></textarea>
             <div class="input-panel" data-tab="upload">
                 <div id="drop-area" class="drop-area">
                     <p>Drag & drop text files here or click to select</p>
-                    <p class="drop-hint">Supports .txt, .md files — upload multiple at once</p>
-                    <input type="file" id="file-input" accept=".txt,.md,.text" multiple class="hidden">
+                    <p class="drop-hint">Supports .txt, .md, .rtf, .pdf files</p>
+                    <input type="file" id="file-input" accept=".txt,.md,.text,.rtf,.pdf" multiple class="hidden">
+                    <input type="file" id="folder-input" webkitdirectory class="hidden">
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
+                        <p class="drop-hint" style="margin-bottom: 8px;">For Scrivener projects, select the Draft folder inside your .scriv package:</p>
+                        <button id="btn-select-folder" class="btn-text">📁 Select Scrivener Draft Folder</button>
+                    </div>
                 </div>
             </div>
 
@@ -364,12 +370,46 @@ https://example.com/another-post" rows="6"></textarea>
 
                 <div class="profile-header">
                     <div class="profile-score">
-                        <span class="profile-label">Writing Complexity</span>
-                        <span id="complexity-score" class="complexity-score">—</span>
+                        <span class="profile-label">Writing Mastery</span>
+                        <span id="mastery-level" class="mastery-level">—</span>
                     </div>
                     <div class="profile-meta">
-                        <span id="reading-level" class="reading-level">—</span>
+                        <span id="technical-level" class="technical-level">—</span>
                         <span id="sample-summary" class="sample-summary">—</span>
+                    </div>
+                </div>
+                
+                <div class="profile-metrics-row">
+                    <div class="profile-metric">
+                        <span class="metric-label">Voice Consistency</span>
+                        <span id="voice-consistency" class="metric-value">—</span>
+                    </div>
+                    <div class="profile-metric">
+                        <span class="metric-label">Pattern Density</span>
+                        <span id="pattern-density" class="metric-value">—</span>
+                    </div>
+                    <div class="profile-metric">
+                        <span class="metric-label">Lexical Diversity</span>
+                        <span id="lexical-diversity" class="metric-value">—</span>
+                    </div>
+                </div>
+                
+                <div class="profile-metrics-row psychological">
+                    <div class="profile-metric">
+                        <span class="metric-label">Emotional Resonance</span>
+                        <span id="emotional-resonance" class="metric-value">—</span>
+                    </div>
+                    <div class="profile-metric">
+                        <span class="metric-label">Authenticity</span>
+                        <span id="authenticity" class="metric-value">—</span>
+                    </div>
+                    <div class="profile-metric">
+                        <span class="metric-label">Narrative Flow</span>
+                        <span id="narrative-flow" class="metric-value">—</span>
+                    </div>
+                    <div class="profile-metric">
+                        <span class="metric-label">Persuasive Clarity</span>
+                        <span id="persuasive-clarity" class="metric-value">—</span>
                     </div>
                 </div>
 
@@ -893,6 +933,32 @@ sudo systemctl restart ollama</pre>
 
                 <p><strong>3.</strong> Click below to switch Write Like Me to Ollama:</p>
                 <button id="btn-switch-ollama" class="btn-primary" style="margin-top: 8px;">Switch to Ollama now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Error Modal -->
+    <div id="analysis-error-modal" class="modal-overlay hidden">
+        <div class="modal modal-small">
+            <div class="modal-header">
+                <h3>Analysis Failed</h3>
+                <button id="btn-close-analysis-error" class="btn-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="analysis-error-reason" style="margin-bottom: 16px;">The AI returned an unexpected response format.</p>
+                <p style="font-size: 13px; color: #666; margin-bottom: 16px;"><strong>Why this happens:</strong> Some models get confused by large amounts of content and return JSON that matches your content's structure instead of the analysis format. This is more common with smaller or local models.</p>
+                <p style="font-size: 13px; color: #666; margin-bottom: 16px;"><strong>Solutions:</strong></p>
+                <ul style="font-size: 13px; color: #666; margin-bottom: 16px; padding-left: 20px;">
+                    <li>Try again (often works on retry)</li>
+                    <li>Use fewer writing samples</li>
+                    <li>Switch to a larger model (GPT-OSS 120B or Claude)</li>
+                </ul>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button id="btn-retry-analysis" class="btn-primary">Try Again</button>
+                    <button id="btn-truncate-retry" class="btn-secondary">Truncate & Retry</button>
+                    <button id="btn-close-analysis-error-2" class="btn-text">Cancel</button>
+                </div>
+                <p id="truncate-info" style="font-size: 12px; color: #888; margin-top: 12px;"></p>
             </div>
         </div>
     </div>

@@ -85,6 +85,17 @@
         // File upload
         elements.dropArea = document.getElementById('drop-area');
         elements.fileInput = document.getElementById('file-input');
+        elements.folderInput = document.getElementById('folder-input');
+        elements.btnSelectFolder = document.getElementById('btn-select-folder');
+
+        // Analysis error modal
+        elements.analysisErrorModal = document.getElementById('analysis-error-modal');
+        elements.analysisErrorReason = document.getElementById('analysis-error-reason');
+        elements.btnRetryAnalysis = document.getElementById('btn-retry-analysis');
+        elements.btnTruncateRetry = document.getElementById('btn-truncate-retry');
+        elements.truncateInfo = document.getElementById('truncate-info');
+        elements.btnCloseAnalysisError = document.getElementById('btn-close-analysis-error');
+        elements.btnCloseAnalysisError2 = document.getElementById('btn-close-analysis-error-2');
 
         // Profile input
         elements.profileInput = document.getElementById('profile-input');
@@ -113,6 +124,14 @@
         elements.qualityScore = document.getElementById('quality-score');
         elements.qualityFill = document.getElementById('quality-fill');
         elements.qualitySuggestion = document.getElementById('quality-suggestion');
+
+        // Profile metrics (Dreyfus-based)
+        elements.masteryLevel = document.getElementById('mastery-level');
+        elements.technicalLevel = document.getElementById('technical-level');
+        elements.sampleSummary = document.getElementById('sample-summary');
+        elements.voiceConsistency = document.getElementById('voice-consistency');
+        elements.patternDensity = document.getElementById('pattern-density');
+        elements.lexicalDiversity = document.getElementById('lexical-diversity');
 
         // Generate step
         elements.contentCategory = document.getElementById('content-category');
@@ -323,11 +342,35 @@
         elements.btnFetchUrl.addEventListener('click', fetchUrlContent);
 
         // File upload
-        elements.dropArea.addEventListener('click', () => elements.fileInput.click());
+        elements.dropArea.addEventListener('click', (e) => {
+            // Don't trigger file input if clicking on the folder button
+            if (e.target !== elements.btnSelectFolder) {
+                elements.fileInput.click();
+            }
+        });
         elements.dropArea.addEventListener('dragover', handleDragOver);
         elements.dropArea.addEventListener('dragleave', handleDragLeave);
         elements.dropArea.addEventListener('drop', handleDrop);
         elements.fileInput.addEventListener('change', handleFileSelect);
+        
+        // Folder input (for Scrivener projects)
+        elements.folderInput?.addEventListener('change', handleFolderSelect);
+        elements.btnSelectFolder?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            elements.folderInput?.click();
+        });
+
+        // Analysis error modal
+        elements.btnRetryAnalysis?.addEventListener('click', () => {
+            hideModal('analysis-error-modal');
+            analyzeWriting();
+        });
+        elements.btnTruncateRetry?.addEventListener('click', () => {
+            hideModal('analysis-error-modal');
+            analyzeWriting({ truncate: true });
+        });
+        elements.btnCloseAnalysisError?.addEventListener('click', () => hideModal('analysis-error-modal'));
+        elements.btnCloseAnalysisError2?.addEventListener('click', () => hideModal('analysis-error-modal'));
 
         // Profile input
         elements.btnLoadProfile.addEventListener('click', loadProfile);
@@ -933,6 +976,22 @@
         elements.dropArea.classList.remove('dragover');
 
         const files = Array.from(e.dataTransfer.files);
+        const items = e.dataTransfer.items;
+        
+        // Check if any item is a directory (for .scriv folder support)
+        if (items && items.length > 0) {
+            const hasDirectory = Array.from(items).some(item => {
+                const entry = item.webkitGetAsEntry && item.webkitGetAsEntry();
+                return entry && entry.isDirectory;
+            });
+            
+            if (hasDirectory) {
+                // Process directory (Scrivener project)
+                processDirectoryUpload(items);
+                return;
+            }
+        }
+        
         processFiles(files);
     }
 
@@ -942,25 +1001,100 @@
         e.target.value = ''; // Reset for re-upload
     }
 
+    function handleFolderSelect(e) {
+        console.log('[WriteMe] Folder selected via input');
+        const files = Array.from(e.target.files);
+        console.log('[WriteMe] Found', files.length, 'files in folder');
+        processFiles(files);
+        e.target.value = ''; // Reset for re-upload
+    }
+
+    // Process a dropped directory (for Scrivener .scriv packages)
+    async function processDirectoryUpload(items) {
+        console.log('[WriteMe] Processing directory upload...');
+        const files = [];
+        
+        for (const item of items) {
+            const entry = item.webkitGetAsEntry && item.webkitGetAsEntry();
+            if (entry) {
+                await traverseDirectory(entry, files);
+            }
+        }
+        
+        if (files.length > 0) {
+            console.log('[WriteMe] Found', files.length, 'files in directory');
+            processFiles(files);
+        } else {
+            UIRenderer.showError('No readable text files found in the dropped folder.');
+        }
+    }
+    
+    // Recursively traverse directory to find RTF/text files
+    async function traverseDirectory(entry, files) {
+        if (entry.isFile) {
+            const file = await getFileFromEntry(entry);
+            if (file) files.push(file);
+        } else if (entry.isDirectory) {
+            const reader = entry.createReader();
+            const entries = await new Promise((resolve) => {
+                reader.readEntries(resolve);
+            });
+            for (const childEntry of entries) {
+                await traverseDirectory(childEntry, files);
+            }
+        }
+    }
+    
+    function getFileFromEntry(entry) {
+        return new Promise((resolve) => {
+            entry.file(file => resolve(file), () => resolve(null));
+        });
+    }
+
     async function processFiles(files) {
         console.log('[WriteMe] Processing', files.length, 'files');
         
+        // Supported file types: txt, md, rtf (Scrivener), text
         const validFiles = files.filter(f =>
-            f.name.endsWith('.txt') || f.name.endsWith('.md') || f.name.endsWith('.text')
+            f.name.endsWith('.txt') || 
+            f.name.endsWith('.md') || 
+            f.name.endsWith('.text') ||
+            f.name.endsWith('.rtf') ||  // Scrivener uses RTF
+            f.name.endsWith('.pdf')     // PDF support via PDF.js
         );
 
         console.log('[WriteMe] Valid files:', validFiles.map(f => f.name));
 
         if (validFiles.length === 0) {
             console.warn('[WriteMe] No valid files found');
-            UIRenderer.showError('Please upload .txt or .md files.');
+            UIRenderer.showError('Please upload .txt, .md, .rtf, or .pdf files. For Scrivener projects, you can drop the .scriv folder directly.');
             return;
         }
 
         for (const file of validFiles) {
             try {
                 console.log('[WriteMe] Reading file:', file.name);
-                const content = await readFile(file);
+                let content;
+                
+                if (file.name.endsWith('.pdf')) {
+                    // Parse PDF to plain text using PDF.js
+                    content = await parsePDF(file);
+                    console.log('[WriteMe] PDF parsed:', file.name, '- Text length:', content.length);
+                } else if (file.name.endsWith('.rtf')) {
+                    // Parse RTF to plain text
+                    const rtfContent = await readFile(file);
+                    content = parseRTF(rtfContent);
+                    console.log('[WriteMe] RTF parsed:', file.name, '- Text length:', content.length);
+                } else {
+                    content = await readFile(file);
+                }
+                
+                // Skip empty or very short files
+                if (content.trim().length < 50) {
+                    console.log('[WriteMe] Skipping short file:', file.name);
+                    continue;
+                }
+                
                 console.log('[WriteMe] File read successfully:', file.name, '- Length:', content.length);
                 state.samples.push({
                     source: file.name,
@@ -976,6 +1110,61 @@
         updateSamplesDisplay();
     }
 
+    // Parse RTF content to plain text (handles Scrivener RTF format)
+    function parseRTF(rtf) {
+        // Remove RTF header/control words and extract text
+        let text = rtf;
+        
+        // Remove RTF version and charset headers
+        text = text.replace(/^\{\\rtf1[^}]*\{/i, '{');
+        
+        // Handle Unicode escapes: \u12345? (the ? is a placeholder)
+        text = text.replace(/\\u(-?\d+)[\?\s]?/g, (match, code) => {
+            return String.fromCharCode(parseInt(code, 10));
+        });
+        
+        // Remove font tables, color tables, stylesheet, etc.
+        text = text.replace(/\{\\fonttbl[^}]*\}/gi, '');
+        text = text.replace(/\{\\colortbl[^}]*\}/gi, '');
+        text = text.replace(/\{\\stylesheet[^}]*\}/gi, '');
+        text = text.replace(/\{\\info[^}]*\}/gi, '');
+        text = text.replace(/\{\\[^{}]*\}/g, '');
+        
+        // Remove Scrivener-specific control sequences
+        text = text.replace(/\\Scrivener[a-z]*/gi, '');
+        
+        // Handle line breaks
+        text = text.replace(/\\par\s*/g, '\n');
+        text = text.replace(/\\line\s*/g, '\n');
+        text = text.replace(/\\\n/g, '\n');
+        
+        // Handle special characters
+        text = text.replace(/\\'/g, '\'');
+        text = text.replace(/\\rquote\s*/g, '\'');
+        text = text.replace(/\\lquote\s*/g, '\'');
+        text = text.replace(/\\rdblquote\s*/g, '"');
+        text = text.replace(/\\ldblquote\s*/g, '"');
+        text = text.replace(/\\endash\s*/g, '–');
+        text = text.replace(/\\emdash\s*/g, '—');
+        text = text.replace(/\\bullet\s*/g, '•');
+        text = text.replace(/\\tab\s*/g, '\t');
+        
+        // Remove all remaining control words (\word or \word0)
+        text = text.replace(/\\[a-z]+\d*\s*/gi, '');
+        
+        // Remove braces
+        text = text.replace(/[{}]/g, '');
+        
+        // Clean up whitespace
+        text = text.replace(/\r\n/g, '\n');
+        text = text.replace(/\r/g, '\n');
+        text = text.replace(/\n{3,}/g, '\n\n');
+        text = text.replace(/[ \t]+/g, ' ');
+        text = text.trim();
+        
+        return text;
+    }
+
     function readFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -983,6 +1172,53 @@
             reader.onerror = reject;
             reader.readAsText(file);
         });
+    }
+
+    // Parse PDF to plain text using PDF.js
+    async function parsePDF(file) {
+        // Check if PDF.js is available
+        if (typeof pdfjsLib === 'undefined') {
+            console.error('[WriteMe] PDF.js not loaded');
+            throw new Error('PDF.js library not available');
+        }
+
+        // Set worker source (use CDN)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        try {
+            // Read file as ArrayBuffer
+            const arrayBuffer = await file.arrayBuffer();
+            
+            // Load the PDF document
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            console.log('[WriteMe] PDF loaded:', file.name, '- Pages:', pdf.numPages);
+            
+            let fullText = '';
+            
+            // Extract text from each page
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                const textContent = await page.getTextContent();
+                
+                // Combine text items, preserving some structure
+                const pageText = textContent.items
+                    .map(item => item.str)
+                    .join(' ');
+                
+                fullText += pageText + '\n\n';
+            }
+            
+            // Clean up the text
+            fullText = fullText
+                .replace(/\s+/g, ' ')           // Normalize whitespace
+                .replace(/\n\s*\n/g, '\n\n')    // Clean up paragraph breaks
+                .trim();
+            
+            return fullText;
+        } catch (err) {
+            console.error('[WriteMe] PDF parsing error:', err);
+            throw new Error(`Failed to parse PDF: ${err.message}`);
+        }
     }
 
     // --- Profile Loading ---
@@ -1054,7 +1290,7 @@
 
     // --- Analysis ---
 
-    async function analyzeWriting() {
+    async function analyzeWriting(options = {}) {
         console.log('[WriteMe] Starting analysis with', state.samples.length, 'samples');
         
         if (state.samples.length === 0) {
@@ -1066,6 +1302,9 @@
         goToStep('profile');
 
         console.log('[WriteMe] Showing loading indicator');
+        if (options.truncate) {
+            console.log('[WriteMe] TRUNCATE MODE ENABLED');
+        }
         elements.profileLoading.classList.remove('hidden');
         elements.profileContent.classList.add('hidden');
         elements.btnToGenerate.disabled = true;
@@ -1088,7 +1327,7 @@
 
             // Analyze
             console.log('[WriteMe] Calling WritingAnalyzer.analyzeWriting...');
-            state.profile = await WritingAnalyzer.analyzeWriting(state.samples, config);
+            state.profile = await WritingAnalyzer.analyzeWriting(state.samples, config, options);
             console.log('[WriteMe] Analysis complete, profile:', state.profile);
 
             // Render profile
@@ -1114,9 +1353,14 @@
                 console.log('[WriteMe] Showing Puter fallback modal');
                 showPuterFallback(err.message);
                 goToStep('input');
+            } else if (err.code === 'INVALID_PROFILE_SCHEMA') {
+                console.log('[WriteMe] Showing analysis error modal');
+                showAnalysisError(err.message);
+                goToStep('input');
             } else {
                 console.log('[WriteMe] Showing error message');
                 UIRenderer.showError(err.message);
+                goToStep('input');
             }
         }
     }
@@ -1823,6 +2067,20 @@
         showModal('puter-fallback-modal');
     }
 
+    function showAnalysisError(reason) {
+        if (elements.analysisErrorReason) {
+            elements.analysisErrorReason.textContent = reason;
+        }
+        // Show sample size info for truncate option
+        const totalChars = state.samples.reduce((sum, s) => sum + (s.content?.length || 0), 0);
+        if (elements.truncateInfo) {
+            elements.truncateInfo.textContent = totalChars > 60000 
+                ? `Your samples total ${Math.round(totalChars / 1000)}K characters. "Truncate & Retry" will use a smaller portion.`
+                : '';
+        }
+        showModal('analysis-error-modal');
+    }
+
     function switchToOllama() {
         elements.apiMode.value = 'ollama';
         handleApiModeChange();
@@ -1948,7 +2206,48 @@
         }
     }
 
-    // --- Profile Quality ---
+    // --- Profile Quality (Fidelity Score) ---
+    // The score indicates how closely generated content will match the author's actual writing.
+    // Based on research in authorship attribution and stylometric analysis.
+
+    const FIDELITY_LEVELS = {
+        exceptional: {
+            min: 95,
+            label: 'Exceptional',
+            meaning: 'Output will be nearly indistinguishable from your actual writing',
+            color: 'exceptional'
+        },
+        high: {
+            min: 85,
+            label: 'High Fidelity',
+            meaning: 'Core voice and style accurately captured with minor variations',
+            color: 'excellent'
+        },
+        good: {
+            min: 70,
+            label: 'Good Match',
+            meaning: 'Major stylistic elements captured; some idiosyncrasies may vary',
+            color: 'good'
+        },
+        moderate: {
+            min: 50,
+            label: 'Moderate',
+            meaning: 'General tone recognizable; specific markers may be inconsistent',
+            color: 'fair'
+        },
+        partial: {
+            min: 30,
+            label: 'Partial',
+            meaning: 'Basic patterns identified; output will have noticeable variations',
+            color: 'needs-more'
+        },
+        insufficient: {
+            min: 0,
+            label: 'Insufficient',
+            meaning: 'Need more samples for reliable style matching',
+            color: 'insufficient'
+        }
+    };
 
     function calculateProfileQuality(samples) {
         const sampleCount = samples.length;
@@ -1958,67 +2257,146 @@
         // Calculate source variety (different types of inputs)
         const sourceTypes = new Set(samples.map(s => s.type));
         const sourceVariety = sourceTypes.size;
+        
+        // Calculate average words per sample
+        const avgWords = sampleCount > 0 ? wordCount / sampleCount : 0;
+        
+        // Calculate content diversity (rough measure of topic variety)
+        const uniqueFirstWords = new Set(
+            samples.map(s => (s.text || '').split(/\s+/).slice(0, 10).join(' ').toLowerCase())
+        );
+        const contentDiversity = Math.min(uniqueFirstWords.size / Math.max(sampleCount, 1), 1);
 
-        // Quality scoring
+        // === FIDELITY SCORING (0-100) ===
+        // This score directly predicts how closely output will match the author's actual writing.
+        
         let score = 0;
-        let label = '';
-        let suggestion = '';
+        const breakdown = {};
 
-        // Sample count scoring (0-30 points)
-        if (sampleCount >= 10) score += 30;
-        else if (sampleCount >= 5) score += 20;
-        else if (sampleCount >= 3) score += 10;
-        else score += 5;
-
-        // Word count scoring (0-40 points)
-        if (wordCount >= 5000) score += 40;
-        else if (wordCount >= 2500) score += 30;
-        else if (wordCount >= 1000) score += 20;
-        else if (wordCount >= 500) score += 10;
-        else score += 5;
-
-        // Source variety scoring (0-20 points)
-        if (sourceVariety >= 3) score += 20;
-        else if (sourceVariety >= 2) score += 10;
-        else score += 5;
-
-        // Consistency bonus (0-10 points) - if samples are long enough on average
-        const avgWords = wordCount / sampleCount;
-        if (avgWords >= 300) score += 10;
-        else if (avgWords >= 150) score += 5;
-
-        // Determine quality level
-        if (score >= 80) {
-            label = 'Excellent';
-            suggestion = 'Your profile has strong coverage for accurate style matching.';
-        } else if (score >= 60) {
-            label = 'Good';
-            suggestion = 'Your profile is solid. Adding more samples could improve accuracy.';
-        } else if (score >= 40) {
-            label = 'Fair';
-            const neededWords = 2500 - wordCount;
-            const neededSamples = 5 - sampleCount;
-            if (neededSamples > 0) {
-                suggestion = `Consider adding ${neededSamples} more sample${neededSamples > 1 ? 's' : ''} for better style detection.`;
-            } else if (neededWords > 0) {
-                suggestion = `Adding about ${Math.ceil(neededWords / 100) * 100} more words would improve accuracy.`;
-            } else {
-                suggestion = 'Try adding samples from different contexts (blogs, social media, emails).';
-            }
+        // 1. Sample Volume (0-25 points)
+        // More samples = more patterns to learn from
+        if (sampleCount >= 15) {
+            breakdown.volume = 25;
+        } else if (sampleCount >= 10) {
+            breakdown.volume = 22;
+        } else if (sampleCount >= 7) {
+            breakdown.volume = 18;
+        } else if (sampleCount >= 5) {
+            breakdown.volume = 14;
+        } else if (sampleCount >= 3) {
+            breakdown.volume = 10;
+        } else if (sampleCount >= 2) {
+            breakdown.volume = 6;
         } else {
-            label = 'Needs More';
-            suggestion = `Add more writing samples. Aim for at least 5 samples with 2,500+ words total.`;
+            breakdown.volume = 3;
+        }
+        score += breakdown.volume;
+
+        // 2. Content Density (0-30 points)
+        // More words = more vocabulary and structure patterns
+        if (wordCount >= 10000) {
+            breakdown.density = 30;
+        } else if (wordCount >= 7500) {
+            breakdown.density = 27;
+        } else if (wordCount >= 5000) {
+            breakdown.density = 24;
+        } else if (wordCount >= 3000) {
+            breakdown.density = 20;
+        } else if (wordCount >= 2000) {
+            breakdown.density = 16;
+        } else if (wordCount >= 1000) {
+            breakdown.density = 12;
+        } else if (wordCount >= 500) {
+            breakdown.density = 8;
+        } else {
+            breakdown.density = 4;
+        }
+        score += breakdown.density;
+
+        // 3. Sample Depth (0-20 points)
+        // Longer samples provide better context for voice patterns
+        if (avgWords >= 500) {
+            breakdown.depth = 20;
+        } else if (avgWords >= 350) {
+            breakdown.depth = 17;
+        } else if (avgWords >= 250) {
+            breakdown.depth = 14;
+        } else if (avgWords >= 150) {
+            breakdown.depth = 10;
+        } else if (avgWords >= 100) {
+            breakdown.depth = 7;
+        } else {
+            breakdown.depth = 4;
+        }
+        score += breakdown.depth;
+
+        // 4. Source Variety (0-15 points)
+        // Different contexts reveal different facets of voice
+        if (sourceVariety >= 4) {
+            breakdown.variety = 15;
+        } else if (sourceVariety >= 3) {
+            breakdown.variety = 12;
+        } else if (sourceVariety >= 2) {
+            breakdown.variety = 8;
+        } else {
+            breakdown.variety = 4;
+        }
+        score += breakdown.variety;
+
+        // 5. Content Diversity Bonus (0-10 points)
+        // Different topics show vocabulary range
+        breakdown.diversity = Math.round(contentDiversity * 10);
+        score += breakdown.diversity;
+
+        // Clamp to 100 max
+        score = Math.min(score, 100);
+
+        // Determine fidelity level
+        let fidelityLevel;
+        if (score >= 95) fidelityLevel = FIDELITY_LEVELS.exceptional;
+        else if (score >= 85) fidelityLevel = FIDELITY_LEVELS.high;
+        else if (score >= 70) fidelityLevel = FIDELITY_LEVELS.good;
+        else if (score >= 50) fidelityLevel = FIDELITY_LEVELS.moderate;
+        else if (score >= 30) fidelityLevel = FIDELITY_LEVELS.partial;
+        else fidelityLevel = FIDELITY_LEVELS.insufficient;
+
+        // Generate specific suggestions based on what's lacking
+        let suggestion = '';
+        const suggestions = [];
+        
+        if (breakdown.volume < 18 && sampleCount < 7) {
+            suggestions.push(`Add ${7 - sampleCount} more sample${7 - sampleCount > 1 ? 's' : ''} to improve pattern detection`);
+        }
+        if (breakdown.density < 20 && wordCount < 3000) {
+            const needed = 3000 - wordCount;
+            suggestions.push(`Add ~${Math.ceil(needed / 100) * 100} more words for better vocabulary coverage`);
+        }
+        if (breakdown.depth < 14 && avgWords < 250) {
+            suggestions.push('Include longer-form writing samples (250+ words each)');
+        }
+        if (breakdown.variety < 12 && sourceVariety < 3) {
+            suggestions.push('Add samples from different contexts (emails, social media, articles)');
+        }
+
+        if (suggestions.length === 0) {
+            suggestion = fidelityLevel.meaning;
+        } else {
+            suggestion = suggestions.slice(0, 2).join('. ') + '.';
         }
 
         return {
-            score: Math.min(score, 100),
-            label,
+            score,
+            label: fidelityLevel.label,
+            meaning: fidelityLevel.meaning,
+            color: fidelityLevel.color,
             suggestion,
+            breakdown,
             stats: {
                 sampleCount,
                 wordCount,
                 sourceVariety,
-                avgWords: Math.round(avgWords)
+                avgWords: Math.round(avgWords),
+                contentDiversity: Math.round(contentDiversity * 100)
             }
         };
     }
@@ -2026,16 +2404,19 @@
     function updateProfileQualityDisplay(samples) {
         const quality = calculateProfileQuality(samples);
 
-        // Update score label
-        elements.qualityScore.textContent = quality.label;
-        elements.qualityScore.className = 'quality-score ' + quality.label.toLowerCase().replace(' ', '-');
+        // Update score label with percentage
+        elements.qualityScore.textContent = `${quality.label} (${quality.score}%)`;
+        elements.qualityScore.className = 'quality-score ' + quality.color;
 
         // Update progress bar
         elements.qualityFill.style.width = quality.score + '%';
-        elements.qualityFill.className = 'quality-fill ' + quality.label.toLowerCase().replace(' ', '-');
+        elements.qualityFill.className = 'quality-fill ' + quality.color;
 
-        // Update suggestion
-        elements.qualitySuggestion.textContent = quality.suggestion;
+        // Update suggestion with meaning context
+        const suggestionText = quality.score >= 70 
+            ? quality.meaning 
+            : quality.suggestion;
+        elements.qualitySuggestion.textContent = suggestionText;
 
         return quality;
     }
@@ -2346,15 +2727,67 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         const profile = state.profile;
         let html = '';
 
-        // Header with metrics (matches profile step)
+        // Header with Dreyfus-based mastery metrics
+        const masteryLabel = profile.mastery_label || getMasteryFromComplexity(profile.complexity_score);
+        const technicalLevel = profile.technical_level || profile.reading_level || 'Not determined';
+        
         html += `
             <div class="profile-header-modal">
                 <div class="profile-score-modal">
-                    <span class="profile-label">Writing Complexity</span>
-                    <span class="complexity-score">${profile.complexity_score || '—'}</span>
+                    <span class="profile-label">Writing Mastery</span>
+                    <span class="mastery-level">${escapeHtml(masteryLabel)}</span>
                 </div>
                 <div class="profile-meta-modal">
-                    <span class="reading-level">${profile.reading_level || '—'}</span>
+                    <span class="technical-level">${escapeHtml(technicalLevel)}</span>
+                </div>
+            </div>
+        `;
+        
+        // Metrics row
+        const voiceScore = profile.voice_consistency || estimateMetricFromProfile(profile, 'voice');
+        const patternScore = profile.pattern_density || estimateMetricFromProfile(profile, 'pattern');
+        const lexicalScore = profile.lexical_diversity || estimateMetricFromProfile(profile, 'lexical');
+        
+        html += `
+            <div class="profile-metrics-row-modal">
+                <div class="profile-metric-modal">
+                    <span class="metric-label">Voice Consistency</span>
+                    <span class="metric-value" data-score="${voiceScore >= 7 ? 'high' : voiceScore >= 5 ? 'medium' : 'low'}">${voiceScore}/10</span>
+                </div>
+                <div class="profile-metric-modal">
+                    <span class="metric-label">Pattern Density</span>
+                    <span class="metric-value" data-score="${patternScore >= 7 ? 'high' : patternScore >= 5 ? 'medium' : 'low'}">${patternScore}/10</span>
+                </div>
+                <div class="profile-metric-modal">
+                    <span class="metric-label">Lexical Diversity</span>
+                    <span class="metric-value" data-score="${lexicalScore >= 7 ? 'high' : lexicalScore >= 5 ? 'medium' : 'low'}">${lexicalScore}/10</span>
+                </div>
+            </div>
+        `;
+
+        // Psychological impact metrics row
+        const emotionalScore = profile.emotional_resonance || estimateMetricFromProfile(profile, 'emotional');
+        const authenticityScore = profile.authenticity || estimateMetricFromProfile(profile, 'authenticity');
+        const flowScore = profile.narrative_flow || estimateMetricFromProfile(profile, 'flow');
+        const persuasiveScore = profile.persuasive_clarity || estimateMetricFromProfile(profile, 'persuasive');
+
+        html += `
+            <div class="profile-metrics-row-modal psychological">
+                <div class="profile-metric-modal">
+                    <span class="metric-label">Emotional Resonance</span>
+                    <span class="metric-value" data-score="${emotionalScore >= 7 ? 'high' : emotionalScore >= 5 ? 'medium' : 'low'}">${emotionalScore}/10</span>
+                </div>
+                <div class="profile-metric-modal">
+                    <span class="metric-label">Authenticity</span>
+                    <span class="metric-value" data-score="${authenticityScore >= 7 ? 'high' : authenticityScore >= 5 ? 'medium' : 'low'}">${authenticityScore}/10</span>
+                </div>
+                <div class="profile-metric-modal">
+                    <span class="metric-label">Narrative Flow</span>
+                    <span class="metric-value" data-score="${flowScore >= 7 ? 'high' : flowScore >= 5 ? 'medium' : 'low'}">${flowScore}/10</span>
+                </div>
+                <div class="profile-metric-modal">
+                    <span class="metric-label">Persuasive Clarity</span>
+                    <span class="metric-value" data-score="${persuasiveScore >= 7 ? 'high' : persuasiveScore >= 5 ? 'medium' : 'low'}">${persuasiveScore}/10</span>
                 </div>
             </div>
         `;
@@ -2471,6 +2904,53 @@ Adapt the writing to fit this platform's culture and expectations while maintain
 
         elements.fullProfileContent.innerHTML = html;
         showModal('full-profile-modal');
+    }
+    
+    // Helper to map complexity score to Dreyfus mastery level
+    function getMasteryFromComplexity(score) {
+        if (!score) return 'Competent';
+        if (score >= 9) return 'Masterful';
+        if (score >= 8) return 'Expert';
+        if (score >= 6) return 'Proficient';
+        if (score >= 4) return 'Competent';
+        if (score >= 2) return 'Emerging';
+        return 'Novice';
+    }
+    
+    // Estimate metrics from available profile data
+    function estimateMetricFromProfile(profile, type) {
+        const complexity = profile.complexity_score || 5;
+        const markersCount = (profile.markers || []).length;
+        const patternsCount = (profile.patterns || []).length;
+        const vocabWords = (profile.vocabulary?.characteristic_words || []).length;
+
+        switch (type) {
+            case 'voice':
+                return Math.min(10, Math.round((markersCount + patternsCount) / 2 + 4));
+            case 'pattern':
+                return Math.min(10, Math.round((markersCount + patternsCount) / 3 + 3));
+            case 'lexical':
+                return Math.min(10, Math.round(vocabWords / 2 + complexity / 2));
+            case 'emotional':
+                // Emotional resonance - estimate from tone and style
+                const toneScore = profile.tone?.emotional_register === 'passionate' ? 8 : 
+                                  profile.tone?.emotional_register === 'enthusiastic' ? 7 : 5;
+                return Math.min(10, Math.round((toneScore + complexity) / 2));
+            case 'authenticity':
+                // Authenticity - inversely related to formality, related to markers
+                const formalityPenalty = profile.style?.formality === 'formal' ? -1 : 
+                                         profile.style?.formality === 'conversational' ? 1 : 0;
+                return Math.min(10, Math.max(3, Math.round(markersCount / 2 + 5 + formalityPenalty)));
+            case 'flow':
+                // Narrative flow - from structure and patterns
+                return Math.min(10, Math.round((patternsCount / 2) + (complexity / 2) + 3));
+            case 'persuasive':
+                // Persuasive clarity - from directness and complexity balance
+                const directnessBonus = profile.style?.directness === 'direct' ? 2 : 0;
+                return Math.min(10, Math.round(complexity / 2 + 4 + directnessBonus));
+            default:
+                return 5;
+        }
     }
 
     function escapeHtml(text) {

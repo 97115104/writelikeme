@@ -84,20 +84,45 @@ Generated text receives a **quality score from 0-100** showing how authentic it 
 
 ### Writing Profile Analysis
 
-Share your writing samples and get a comprehensive analysis:
+Share your writing samples and get a comprehensive analysis using research-backed frameworks:
 
+- **Writing Mastery Level** — Based on the Dreyfus Model of Skill Acquisition:
+  - *Novice* → *Emerging* → *Competent* → *Proficient* → *Expert* → *Masterful*
+- **Technical Level** — Literal grade/education equivalent (Grade 6-8 through Academic/Technical)
+- **Voice Consistency** — How consistent your voice is across samples (1-10)
+- **Pattern Density** — How many unique, replicable patterns were detected (1-10)
+- **Lexical Diversity** — Vocabulary richness and variety (1-10)
 - **Style** — Formality level, descriptiveness, directness, perspective
-- **Tone & Voice** — Primary tone, emotional register, voice consistency
-- **Vocabulary** — Word complexity, characteristic words, reading level
-- **Structure** — Sentence length patterns, variety, paragraph style
+- **Tone & Voice** — Primary tone, emotional register, consistency
 - **Stylistic Markers** — Unique patterns, signature phrases, punctuation preferences
 - **Patterns to Replicate** — Key constructions that define your voice
 
-### Profile Quality Metrics
+### Profile Fidelity Score
 
-Your profile is rated as **Excellent**, **Good**, **Fair**, or **Needs More** based on:
-- Number of writing samples (3-5+ recommended)
-- Total word count (2,000+ words recommended)
+Your profile quality is scored as a **fidelity percentage** indicating how closely generated content will match your actual writing:
+
+- **95-100% (Exceptional)** — Output nearly indistinguishable from your actual writing
+- **85-94% (High Fidelity)** — Core voice and style accurately captured with minor variations
+- **70-84% (Good Match)** — Major stylistic elements captured; some idiosyncrasies may vary
+- **50-69% (Moderate)** — General tone recognizable; specific markers may be inconsistent
+- **30-49% (Partial)** — Basic patterns identified; output will have noticeable variations
+- **<30% (Insufficient)** — Need more samples for reliable style matching
+
+Scoring factors:
+- Sample volume (number of writing samples)
+- Content density (total word count)
+- Sample depth (average words per sample)
+- Source variety (different input types)
+- Content diversity (topical variety)
+
+### Scrivener Support
+
+Write Like Me fully supports **Scrivener** projects:
+
+- **Drag & drop .scriv folders** — Drop your entire Scrivener project folder directly onto the upload area
+- **RTF file parsing** — Automatically extracts text from Scrivener's RTF format
+- **Batch import** — Imports all documents from your Draft folder at once
+- **Smart filtering** — Skips empty files and metadata, imports only your actual writing
 - Source variety (different types of content)
 
 ### Platform-Aware Generation
@@ -263,7 +288,8 @@ After generating content, you have flexible options:
 
 - **Paste** — Copy and paste writing samples directly. Multiple samples separated by blank lines.
 - **URL** — Enter URLs to blog posts/articles. Supports bulk URLs (one per line). GitHub repo URLs are auto-detected and fetched with README + metadata.
-- **Upload** — Upload .txt or .md files. Supports batch uploads.
+- **Upload** — Upload .txt, .md, or .rtf files. Supports batch uploads.
+- **Scrivener** — Drag & drop .scriv project folders directly. RTF files are automatically parsed to plain text.
 - **Load Profile** — Paste or upload a previously saved profile JSON to skip analysis.
 
 ## Content Types

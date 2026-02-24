@@ -297,7 +297,7 @@
 
 .profile-score {
     text-align: center;
-    min-width: 100px;
+    min-width: 120px;
 }
 
 .profile-label {
@@ -309,6 +309,13 @@
     margin-bottom: 4px;
 }
 
+.mastery-level {
+    display: block;
+    font-size: 20px;
+    font-weight: bold;
+    color: #2e7d32;
+}
+
 .complexity-score {
     display: block;
     font-size: 32px;
@@ -318,6 +325,14 @@
 
 .profile-meta {
     flex: 1;
+}
+
+.technical-level {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
 }
 
 .reading-level {
@@ -332,6 +347,82 @@
     display: block;
     font-size: 13px;
     color: #666;
+}
+
+/* Profile Metrics Row */
+.profile-metrics-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.profile-metric {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}
+
+.profile-metric .metric-label {
+    display: block;
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.profile-metric .metric-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1976d2;
+}
+
+.profile-metric .metric-value[data-score="high"] {
+    color: #2e7d32;
+}
+
+.profile-metric .metric-value[data-score="medium"] {
+    color: #f57c00;
+}
+
+.profile-metric .metric-value[data-score="low"] {
+    color: #d32f2f;
+}
+
+/* Psychological Metrics Row - distinct styling */
+.profile-metrics-row.psychological {
+    background: linear-gradient(135deg, #f8f5ff 0%, #f5f8ff 100%);
+    border-color: #d8d0f0;
+}
+
+.profile-metrics-row.psychological .profile-metric {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: #e8e0f8;
+}
+
+.profile-metrics-row.psychological .metric-label {
+    color: #6b5b95;
+}
+
+.profile-metrics-row-modal.psychological {
+    background: linear-gradient(135deg, #f8f5ff 0%, #f5f8ff 100%);
+    border-bottom-color: #d8d0f0;
+}
+
+.profile-metrics-row-modal.psychological .profile-metric-modal {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.profile-metrics-row-modal.psychological .metric-label {
+    color: #6b5b95;
 }
 
 /* Profile Grid */
@@ -1650,7 +1741,8 @@
     text-transform: uppercase;
 }
 
-.profile-score-modal .complexity-score {
+.profile-score-modal .complexity-score,
+.profile-score-modal .mastery-level {
     font-size: 24px;
     font-weight: bold;
     color: #2e7d32;
@@ -1659,6 +1751,50 @@
 .profile-meta-modal {
     font-size: 14px;
     color: #555;
+}
+
+.profile-meta-modal .technical-level {
+    font-weight: 500;
+}
+
+/* Profile Metrics Row in Modal */
+.profile-metrics-row-modal {
+    display: flex;
+    gap: 24px;
+    padding: 12px 0;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #eee;
+    flex-wrap: wrap;
+}
+
+.profile-metric-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 100px;
+}
+
+.profile-metric-modal .metric-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+}
+
+.profile-metric-modal .metric-value {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.profile-metric-modal .metric-value[data-score="high"] {
+    color: #2e7d32;
+}
+
+.profile-metric-modal .metric-value[data-score="medium"] {
+    color: #f9a825;
+}
+
+.profile-metric-modal .metric-value[data-score="low"] {
+    color: #c62828;
 }
 
 .profile-summary-modal {
@@ -1851,6 +1987,12 @@
     border-radius: 12px;
 }
 
+.profile-quality .quality-score.exceptional {
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    color: #1b5e20;
+    font-weight: 600;
+}
+
 .profile-quality .quality-score.excellent {
     background: #e8f5e9;
     color: #2e7d32;
@@ -1871,6 +2013,11 @@
     color: #c62828;
 }
 
+.profile-quality .quality-score.insufficient {
+    background: #ffebee;
+    color: #b71c1c;
+}
+
 .profile-quality .quality-bar {
     height: 6px;
     background: #e0e0e0;
@@ -1883,6 +2030,10 @@
     height: 100%;
     border-radius: 3px;
     transition: width 0.5s ease, background 0.3s ease;
+}
+
+.profile-quality .quality-fill.exceptional {
+    background: linear-gradient(90deg, #2e7d32, #1b5e20);
 }
 
 .profile-quality .quality-fill.excellent {
@@ -1899,6 +2050,10 @@
 
 .profile-quality .quality-fill.needs-more {
     background: #d32f2f;
+}
+
+.profile-quality .quality-fill.insufficient {
+    background: #b71c1c;
 }
 
 .profile-quality .quality-suggestion {

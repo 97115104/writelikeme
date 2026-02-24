@@ -1,40 +1,160 @@
 const UIRenderer = (() => {
     function renderProfile(profile, container) {
-        // Complexity score
-        const complexityEl = document.getElementById('complexity-score');
-        complexityEl.textContent = profile.complexity_score || '—';
+        // Mastery level (Dreyfus-based) - fallback to complexity-based estimation
+        const masteryEl = document.getElementById('mastery-level');
+        if (masteryEl) {
+            const masteryLabel = profile.mastery_label || getMasteryFromComplexity(profile.complexity_score);
+            masteryEl.textContent = masteryLabel;
+        }
 
-        // Reading level
+        // Technical level (grade-based) - fallback to reading_level
+        const technicalEl = document.getElementById('technical-level');
+        if (technicalEl) {
+            technicalEl.textContent = profile.technical_level || profile.reading_level || 'Unable to determine';
+        }
+
+        // Legacy support: still update complexity-score if element exists
+        const complexityEl = document.getElementById('complexity-score');
+        if (complexityEl) {
+            complexityEl.textContent = profile.complexity_score || '—';
+        }
+
+        // Legacy support: still update reading-level if element exists
         const readingEl = document.getElementById('reading-level');
-        readingEl.textContent = profile.reading_level || 'Unable to determine';
+        if (readingEl) {
+            readingEl.textContent = profile.reading_level || profile.technical_level || 'Unable to determine';
+        }
 
         // Sample summary
         const summaryEl = document.getElementById('sample-summary');
-        summaryEl.textContent = profile.profile_summary || '';
+        if (summaryEl) {
+            summaryEl.textContent = profile.profile_summary || '';
+        }
+
+        // New metrics row
+        const voiceConsistencyEl = document.getElementById('voice-consistency');
+        if (voiceConsistencyEl) {
+            const score = profile.voice_consistency || estimateMetric(profile, 'voice');
+            voiceConsistencyEl.textContent = score + '/10';
+            voiceConsistencyEl.dataset.score = score >= 7 ? 'high' : score >= 5 ? 'medium' : 'low';
+        }
+
+        const patternDensityEl = document.getElementById('pattern-density');
+        if (patternDensityEl) {
+            const score = profile.pattern_density || estimateMetric(profile, 'pattern');
+            patternDensityEl.textContent = score + '/10';
+            patternDensityEl.dataset.score = score >= 7 ? 'high' : score >= 5 ? 'medium' : 'low';
+        }
+
+        const lexicalDiversityEl = document.getElementById('lexical-diversity');
+        if (lexicalDiversityEl) {
+            const score = profile.lexical_diversity || estimateMetric(profile, 'lexical');
+            lexicalDiversityEl.textContent = score + '/10';
+            lexicalDiversityEl.dataset.score = score >= 7 ? 'high' : score >= 5 ? 'medium' : 'low';
+        }
+
+        // Psychological impact metrics
+        const emotionalResonanceEl = document.getElementById('emotional-resonance');
+        if (emotionalResonanceEl) {
+            const score = profile.emotional_resonance || estimateMetric(profile, 'emotional');
+            emotionalResonanceEl.textContent = score + '/10';
+            emotionalResonanceEl.dataset.score = score >= 7 ? 'high' : score >= 5 ? 'medium' : 'low';
+        }
+
+        const authenticityEl = document.getElementById('authenticity');
+        if (authenticityEl) {
+            const score = profile.authenticity || estimateMetric(profile, 'authenticity');
+            authenticityEl.textContent = score + '/10';
+            authenticityEl.dataset.score = score >= 7 ? 'high' : score >= 5 ? 'medium' : 'low';
+        }
+
+        const narrativeFlowEl = document.getElementById('narrative-flow');
+        if (narrativeFlowEl) {
+            const score = profile.narrative_flow || estimateMetric(profile, 'flow');
+            narrativeFlowEl.textContent = score + '/10';
+            narrativeFlowEl.dataset.score = score >= 7 ? 'high' : score >= 5 ? 'medium' : 'low';
+        }
+
+        const persuasiveClarityEl = document.getElementById('persuasive-clarity');
+        if (persuasiveClarityEl) {
+            const score = profile.persuasive_clarity || estimateMetric(profile, 'persuasive');
+            persuasiveClarityEl.textContent = score + '/10';
+            persuasiveClarityEl.dataset.score = score >= 7 ? 'high' : score >= 5 ? 'medium' : 'low';
+        }
 
         // Style card
         const styleEl = document.getElementById('style-analysis');
-        styleEl.innerHTML = renderStyleCard(profile.style);
+        if (styleEl) styleEl.innerHTML = renderStyleCard(profile.style);
 
         // Tone card
         const toneEl = document.getElementById('tone-analysis');
-        toneEl.innerHTML = renderToneCard(profile.tone);
+        if (toneEl) toneEl.innerHTML = renderToneCard(profile.tone);
 
         // Vocabulary card
         const vocabEl = document.getElementById('vocab-analysis');
-        vocabEl.innerHTML = renderVocabCard(profile.vocabulary);
+        if (vocabEl) vocabEl.innerHTML = renderVocabCard(profile.vocabulary);
 
         // Structure card
         const structEl = document.getElementById('structure-analysis');
-        structEl.innerHTML = renderStructureCard(profile.structure);
+        if (structEl) structEl.innerHTML = renderStructureCard(profile.structure);
 
         // Markers section
         const markersEl = document.getElementById('markers-analysis');
-        markersEl.innerHTML = renderMarkers(profile.markers);
+        if (markersEl) markersEl.innerHTML = renderMarkers(profile.markers);
 
         // Patterns section
         const patternsEl = document.getElementById('patterns-analysis');
-        patternsEl.innerHTML = renderPatterns(profile.patterns);
+        if (patternsEl) patternsEl.innerHTML = renderPatterns(profile.patterns);
+    }
+
+    // Map complexity score to Dreyfus mastery level
+    function getMasteryFromComplexity(score) {
+        if (!score) return 'Competent';
+        if (score >= 9) return 'Masterful';
+        if (score >= 8) return 'Expert';
+        if (score >= 6) return 'Proficient';
+        if (score >= 4) return 'Competent';
+        if (score >= 2) return 'Emerging';
+        return 'Novice';
+    }
+
+    // Estimate metrics from available profile data
+    function estimateMetric(profile, type) {
+        const complexity = profile.complexity_score || 5;
+        const markersCount = (profile.markers || []).length;
+        const patternsCount = (profile.patterns || []).length;
+        const vocabWords = (profile.vocabulary?.characteristic_words || []).length;
+
+        switch (type) {
+            case 'voice':
+                // Estimate voice consistency from markers and structure data
+                return Math.min(10, Math.round((markersCount + patternsCount) / 2 + 4));
+            case 'pattern':
+                // Pattern density from markers and patterns
+                return Math.min(10, Math.round((markersCount + patternsCount) / 3 + 3));
+            case 'lexical':
+                // Lexical diversity from vocab data
+                return Math.min(10, Math.round(vocabWords / 2 + complexity / 2));
+            case 'emotional':
+                // Emotional resonance - estimate from tone and style
+                const toneScore = profile.tone?.emotional_register === 'passionate' ? 8 : 
+                                  profile.tone?.emotional_register === 'enthusiastic' ? 7 : 5;
+                return Math.min(10, Math.round((toneScore + complexity) / 2));
+            case 'authenticity':
+                // Authenticity - inversely related to formality, related to markers
+                const formalityPenalty = profile.style?.formality === 'formal' ? -1 : 
+                                         profile.style?.formality === 'conversational' ? 1 : 0;
+                return Math.min(10, Math.max(3, Math.round(markersCount / 2 + 5 + formalityPenalty)));
+            case 'flow':
+                // Narrative flow - from structure and patterns
+                return Math.min(10, Math.round((patternsCount / 2) + (complexity / 2) + 3));
+            case 'persuasive':
+                // Persuasive clarity - from directness and complexity balance
+                const directnessBonus = profile.style?.directness === 'direct' ? 2 : 0;
+                return Math.min(10, Math.round(complexity / 2 + 4 + directnessBonus));
+            default:
+                return 5;
+        }
     }
 
     function renderStyleCard(style) {

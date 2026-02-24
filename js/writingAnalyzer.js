@@ -291,51 +291,107 @@ const WritingAnalyzer = (() => {
     window.CONTENT_TYPES = CONTENT_TYPES;
 
     // System prompt for analyzing writing samples
-    const ANALYSIS_SYSTEM_PROMPT = `You are an expert writing analyst specializing in stylistic analysis and voice profiling. Your task is to analyze writing samples and create a comprehensive writing profile.
+    // Writing Mastery Levels based on Dreyfus Model of Skill Acquisition
+    // Reference: Dreyfus, H.L. & Dreyfus, S.E. (1986) "Mind over Machine"
+    const MASTERY_LEVELS = {
+        1: { label: 'Novice', description: 'Basic functional writing. Follows rules rigidly. Limited vocabulary and simple sentence structures.' },
+        2: { label: 'Emerging', description: 'Beginning to develop personal voice. Can vary sentence structure. Starting to show situational awareness.' },
+        3: { label: 'Competent', description: 'Deliberate and organized writing. Clear purpose. Can adapt tone for different contexts.' },
+        4: { label: 'Proficient', description: 'Holistic understanding of writing craft. Intuitive decisions. Consistent voice with intentional variation.' },
+        5: { label: 'Expert', description: 'Deep intuitive mastery. Distinctive voice. Sophisticated control of rhythm, tone, and structure.' },
+        6: { label: 'Masterful', description: 'Transcendent craft. Creates new patterns. Writing has signature quality instantly recognizable.' }
+    };
 
-Analyze the following aspects in detail:
+    // Grade Level Mapping based on Flesch-Kincaid and educational standards
+    // Labels designed for psychological impact - describe the WRITING, not the reader
+    const GRADE_LEVELS = {
+        'accessible': { label: 'Accessible', description: 'Clear and direct. Broad audience appeal. Economy of expression.', flesch: '80-90' },
+        'conversational': { label: 'Conversational', description: 'Natural flow. Balanced complexity. Engaging readability.', flesch: '70-80' },
+        'articulate': { label: 'Articulate', description: 'Polished expression. Thoughtful construction. Confident voice.', flesch: '60-70' },
+        'refined': { label: 'Refined', description: 'Sophisticated phrasing. Nuanced vocabulary. Deliberate rhythm.', flesch: '50-60' },
+        'elevated': { label: 'Elevated', description: 'Complex ideas elegantly expressed. Rich vocabulary. Dense meaning.', flesch: '40-50' },
+        'scholarly': { label: 'Scholarly', description: 'Academic rigor. Technical precision. Layered argumentation.', flesch: '30-40' },
+        'specialized': { label: 'Specialized', description: 'Expert discourse. Field-specific mastery. Maximum information density.', flesch: '0-30' }
+    };
 
-1. STYLE CHARACTERISTICS
-- Formality level (formal, semi-formal, casual, conversational)
-- Descriptiveness (sparse, moderate, rich, ornate)
-- Directness (direct, measured, indirect, circumlocutory)
-- Perspective (first person, second person, third person, mixed)
+    // Expose for other modules
+    window.MASTERY_LEVELS = MASTERY_LEVELS;
+    window.GRADE_LEVELS = GRADE_LEVELS;
 
-2. TONE & VOICE
+    const ANALYSIS_SYSTEM_PROMPT = `You are an expert writing analyst specializing in stylistic analysis and voice profiling using established linguistic and psychological frameworks.
+
+## ANALYSIS FRAMEWORK
+
+### 1. WRITING MASTERY LEVEL (Dreyfus Model of Skill Acquisition)
+Evaluate the writer's craft mastery on a 1-6 scale:
+- 1 (Novice): Functional but rigid. Simple sentences, limited vocabulary, rule-following.
+- 2 (Emerging): Developing personal voice. Beginning sentence variety. Basic situational awareness.
+- 3 (Competent): Deliberate, organized. Clear purpose. Can adapt tone for context.
+- 4 (Proficient): Holistic craft understanding. Intuitive decisions. Consistent voice with intentional variation.
+- 5 (Expert): Deep mastery. Distinctive voice. Sophisticated rhythm, tone, and structure control.
+- 6 (Masterful): Transcendent craft. Creates new patterns. Instantly recognizable signature style.
+
+### 2. TECHNICAL READING LEVEL (Flesch-Kincaid equivalent)
+Provide a complexity descriptor (NOT education-based):
+- "Accessible" (Flesch 80-90): Clear, direct, broad appeal
+- "Conversational" (Flesch 70-80): Natural, balanced, engaging
+- "Articulate" (Flesch 60-70): Polished, thoughtful, confident
+- "Refined" (Flesch 50-60): Sophisticated, nuanced, deliberate
+- "Elevated" (Flesch 40-50): Complex ideas, rich vocabulary
+- "Scholarly" (Flesch 30-40): Academic rigor, technical precision
+- "Specialized" (Flesch 0-30): Expert discourse, maximum density
+
+### 3. PSYCHOLOGICAL IMPACT METRICS (1-10 scales)
+- **Emotional Resonance**: How deeply does the writing connect? Does it evoke feeling?
+- **Authenticity**: How genuine and distinctive is the voice? Does it feel real?
+- **Narrative Flow**: How well does it pull readers forward? Pacing and momentum.
+- **Persuasive Clarity**: How effectively does it communicate intent? Rhetorical power.
+
+### 4. STYLE CHARACTERISTICS
+- Formality: formal, semi-formal, casual, conversational
+- Descriptiveness: sparse, moderate, rich, ornate
+- Directness: direct, measured, indirect, circumlocutory
+- Perspective: first person, second person, third person, mixed
+
+### 5. TONE & VOICE
 - Primary tone (professional, friendly, authoritative, humorous, serious, warm, detached, etc.)
 - Emotional register (neutral, passionate, reserved, enthusiastic, contemplative)
-- Voice consistency across samples
+- Voice consistency score (1-10): How consistent is the voice across samples?
 
-3. VOCABULARY
-- Word complexity level (simple, moderate, sophisticated, technical)
-- Reading level estimate (e.g., "Grade 8", "College level", "Professional")
-- Characteristic word choices and phrases
-- Use of jargon, idioms, or specialized terminology
-- Average word length tendencies
+### 5. VOCABULARY PROFILE
+- Lexical diversity score (1-10): Variety of unique words used
+- Technical density (1-10): Amount of specialized/technical terminology
+- Characteristic words and phrases unique to this writer
 
-4. SENTENCE STRUCTURE
-- Average sentence length tendency (short, medium, long, varied)
-- Sentence variety (simple, compound, complex patterns)
-- Paragraph structure patterns
-- Use of fragments or run-ons (intentional stylistic choices)
+### 6. SENTENCE & STRUCTURE PATTERNS
+- Average sentence length tendency (short <15 words, medium 15-25, long >25, varied)
+- Sentence variety (simple, compound, complex, or mixed patterns)
+- Paragraph structure (tight/focused, expansive, fragmented, flowing)
 
-5. STYLISTIC MARKERS (unique to this writer)
-- Signature phrases or expressions
-- Opening and closing patterns
+### 8. DISTINCTIVE MARKERS (unique fingerprint elements)
+- Signature phrases or constructions
+- Punctuation preferences (em-dashes, semicolons, ellipses, etc.)
+- Opening/closing patterns
 - Transition styles
-- Punctuation preferences (comma usage, semicolons, dashes, etc.)
-- Capitalization patterns
+- Rhythmic patterns
 
-6. PATTERNS TO REPLICATE
-- Key phrases or constructions that define this voice
-- Rhythmic patterns in the prose
-- How the writer builds arguments or narratives
-- How the writer handles emphasis
+### 9. PATTERN DENSITY SCORE (1-10)
+How many distinctive, replicable patterns were identified? Higher = more unique fingerprint.
 
 Return your analysis as valid JSON with this exact structure:
 {
+    "mastery_level": <number 1-6>,
+    "mastery_label": "<Novice|Emerging|Competent|Proficient|Expert|Masterful>",
+    "technical_level": "<Accessible|Conversational|Articulate|Refined|Elevated|Scholarly|Specialized>",
     "complexity_score": <number 1-10>,
-    "reading_level": "<string describing reading level>",
+    "voice_consistency": <number 1-10>,
+    "lexical_diversity": <number 1-10>,
+    "technical_density": <number 1-10>,
+    "pattern_density": <number 1-10>,
+    "emotional_resonance": <number 1-10>,
+    "authenticity": <number 1-10>,
+    "narrative_flow": <number 1-10>,
+    "persuasive_clarity": <number 1-10>,
     "style": {
         "formality": "<level>",
         "descriptiveness": "<level>",
@@ -997,11 +1053,104 @@ Return ONLY the fixed text. No explanations, no comments, no "Here's the revised
         }
     }
 
-    async function analyzeWriting(samples, apiConfig) {
+    /**
+     * Smart content sampling to avoid overwhelming the model.
+     * Takes representative portions from beginning, middle, and end of each sample.
+     * This prevents the model from getting confused by seeing too much content
+     * and outputting JSON that matches the content structure instead of our schema.
+     */
+    function smartSampleContent(samples, maxTotalChars, maxPerSample) {
+        const sampleCount = samples.length;
+        if (sampleCount === 0) return '';
+        
+        // Calculate how much space each sample gets
+        const targetPerSample = Math.floor(maxTotalChars / sampleCount);
+        const sampleLimit = Math.min(targetPerSample, maxPerSample);
+        
+        console.log(`[WritingAnalyzer] Smart sampling: ${sampleCount} samples, ${sampleLimit} chars each (max total: ${maxTotalChars})`);
+        
+        const sampledParts = [];
+        
+        samples.forEach((sample, index) => {
+            const content = (sample.content || '').trim();
+            const source = sample.source || `Sample ${index + 1}`;
+            
+            if (content.length === 0) return;
+            
+            let sampledText;
+            
+            if (content.length <= sampleLimit) {
+                // Use full content if it fits
+                sampledText = content;
+            } else {
+                // Take beginning, middle, and end for better representation
+                const chunkSize = Math.floor(sampleLimit / 3);
+                const middleStart = Math.floor((content.length - chunkSize) / 2);
+                
+                const beginning = content.substring(0, chunkSize);
+                const middle = content.substring(middleStart, middleStart + chunkSize);
+                const end = content.substring(content.length - chunkSize);
+                
+                // Find natural break points (sentences) where possible
+                const cleanBeginning = trimToLastSentence(beginning);
+                const cleanMiddle = trimToCompleteSentence(middle);
+                const cleanEnd = trimFromFirstSentence(end);
+                
+                sampledText = `${cleanBeginning}\n\n[...]\n\n${cleanMiddle}\n\n[...]\n\n${cleanEnd}`;
+            }
+            
+            sampledParts.push(`--- Sample ${index + 1}: ${truncateSource(source)} ---\n${sampledText}`);
+        });
+        
+        return sampledParts.join('\n\n');
+    }
+    
+    // Trim to the last complete sentence
+    function trimToLastSentence(text) {
+        const match = text.match(/^([\s\S]*[.!?])\s*[^.!?]*$/);
+        return match ? match[1].trim() : text.trim();
+    }
+    
+    // Trim to a complete sentence (find first and last sentence boundaries)
+    function trimToCompleteSentence(text) {
+        // Find first sentence start (after a period or start)
+        const startMatch = text.match(/^[^.!?]*[.!?]\s*(.+)/s);
+        const trimmedStart = startMatch ? startMatch[1] : text;
+        
+        // Find last sentence end
+        return trimToLastSentence(trimmedStart);
+    }
+    
+    // Trim from the first complete sentence
+    function trimFromFirstSentence(text) {
+        const match = text.match(/^[^.!?]*[.!?]\s*([\s\S]*)$/);
+        return match ? match[1].trim() : text.trim();
+    }
+    
+    // Truncate long source names
+    function truncateSource(source) {
+        if (source.length <= 40) return source;
+        return source.substring(0, 37) + '...';
+    }
+
+    async function analyzeWriting(samples, apiConfig, options = {}) {
         console.log('[WritingAnalyzer] Starting analysis with', samples.length, 'samples');
         
+        // Smart sampling: limit total content to avoid overwhelming the model
+        // Truncate mode uses more aggressive limits
+        const truncateMode = options.truncate === true;
+        const MAX_TOTAL_CHARS = truncateMode ? 30000 : 60000; // 30K in truncate mode
+        const MAX_PER_SAMPLE = truncateMode ? 4000 : 8000;    // 4K per sample in truncate mode
+        
+        if (truncateMode) {
+            console.log('[WritingAnalyzer] TRUNCATE MODE: Using aggressive sampling limits');
+        }
+        
+        const sampledContent = smartSampleContent(samples, MAX_TOTAL_CHARS, MAX_PER_SAMPLE);
+        console.log('[WritingAnalyzer] Sampled content length:', sampledContent.length, 'characters');
+        
         // Combine samples with clear separators
-        const combinedSamples = samples.map((s, i) => `--- Sample ${i + 1} ---\n${s.content || ''}`).join('\n\n');
+        const combinedSamples = sampledContent;
         console.log('[WritingAnalyzer] Combined samples length:', combinedSamples.length, 'characters');
 
         const userMessage = `Analyze these writing samples and create a detailed writing profile:
@@ -1025,11 +1174,174 @@ Remember to return valid JSON matching the specified structure.`;
             // Parse the JSON response
             const profile = parseProfileResponse(response);
             console.log('[WritingAnalyzer] Parsed profile:', profile);
+            
+            // Validate that we got a real writing profile, not garbage
+            const validation = validateProfileSchema(profile);
+            if (!validation.valid) {
+                console.error('[WritingAnalyzer] Profile schema validation failed:', validation.reason);
+                console.error('[WritingAnalyzer] Invalid profile received:', JSON.stringify(profile).substring(0, 500));
+                
+                // The model returned wrong JSON structure - this is a critical error
+                const error = new Error(`The AI returned an invalid response format. ${validation.reason} This can happen with smaller models or when processing large amounts of content. Please try again or use a different API provider.`);
+                error.code = 'INVALID_PROFILE_SCHEMA';
+                error.invalidProfile = profile;
+                throw error;
+            }
+            
             return profile;
         } catch (err) {
             console.error('[WritingAnalyzer] API request failed:', err);
             throw err;
         }
+    }
+
+    // Validate that a parsed JSON object matches our expected profile schema
+    function validateProfileSchema(profile) {
+        if (!profile || typeof profile !== 'object') {
+            return { valid: false, reason: 'Response is not an object.' };
+        }
+        
+        // Check for obvious wrong structures (content-derived JSON)
+        const wrongStructures = [
+            'story', 'characters', 'scenes',  // Fiction structure
+            'entries', 'changelog', 'date',   // Changelog structure  
+            'title', 'firstName', 'lastName', // Contact/metadata
+            'items', 'products', 'tasks',     // List structures
+            'chapters', 'sections', 'content' // Document structure
+        ];
+        
+        const topLevelKeys = Object.keys(profile);
+        const hasWrongStructure = wrongStructures.some(key => 
+            topLevelKeys.includes(key) && !topLevelKeys.includes('style') && !topLevelKeys.includes('tone')
+        );
+        
+        if (hasWrongStructure) {
+            return { 
+                valid: false, 
+                reason: `Response appears to match content structure (found keys: ${topLevelKeys.slice(0, 5).join(', ')}) rather than writing profile schema.`
+            };
+        }
+        
+        // Check for required profile fields - at least some should be present
+        const profileIndicators = [
+            'style', 'tone', 'vocabulary', 'structure', 'markers', 'patterns',
+            'profile_summary', 'complexity_score', 'mastery_level', 'reading_level',
+            'technical_level', 'voice_consistency', 'pattern_density'
+        ];
+        
+        const matchingFields = profileIndicators.filter(field => profile.hasOwnProperty(field));
+        
+        if (matchingFields.length < 3) {
+            return {
+                valid: false,
+                reason: `Response missing required profile fields. Only found ${matchingFields.length} profile indicators: ${matchingFields.join(', ') || 'none'}.`
+            };
+        }
+        
+        // Check that style/tone are objects if present
+        if (profile.style && typeof profile.style !== 'object') {
+            return { valid: false, reason: 'Style field is not an object.' };
+        }
+        
+        if (profile.tone && typeof profile.tone !== 'object') {
+            return { valid: false, reason: 'Tone field is not an object.' };
+        }
+        
+        return { valid: true };
+    }
+
+    /**
+     * Sanitize JSON string to fix common LLM escape character issues.
+     * Fixes invalid escape sequences like \s, \m, etc.
+     */
+    function sanitizeJsonString(jsonStr) {
+        // Fix invalid escape sequences inside strings
+        // JSON only allows: \" \\ \/ \b \f \n \r \t \uXXXX
+        // LLMs often output things like \s \m \w etc which are invalid
+        
+        let result = '';
+        let inString = false;
+        let i = 0;
+        
+        while (i < jsonStr.length) {
+            const char = jsonStr[i];
+            
+            if (char === '"' && (i === 0 || jsonStr[i-1] !== '\\')) {
+                inString = !inString;
+                result += char;
+                i++;
+            } else if (inString && char === '\\' && i + 1 < jsonStr.length) {
+                const nextChar = jsonStr[i + 1];
+                // Valid JSON escapes
+                if (nextChar === '"' || nextChar === '\\' || nextChar === '/' || 
+                    nextChar === 'b' || nextChar === 'f' || nextChar === 'n' || 
+                    nextChar === 'r' || nextChar === 't') {
+                    result += char + nextChar;
+                    i += 2;
+                } else if (nextChar === 'u' && i + 5 < jsonStr.length) {
+                    // Unicode escape \uXXXX
+                    result += jsonStr.substring(i, i + 6);
+                    i += 6;
+                } else {
+                    // Invalid escape - just include the character without backslash
+                    // e.g., \s becomes s, \m becomes m
+                    result += nextChar;
+                    i += 2;
+                }
+            } else if (inString && (char === '\n' || char === '\r')) {
+                // Replace actual newlines in strings with \n
+                result += '\\n';
+                i++;
+            } else {
+                result += char;
+                i++;
+            }
+        }
+        
+        return result;
+    }
+
+    /**
+     * More aggressive JSON repair for common LLM output issues.
+     * Handles: trailing commas, truncated JSON, unbalanced brackets.
+     */
+    function repairJson(jsonStr) {
+        let text = jsonStr;
+        
+        // Remove trailing commas before } or ]
+        text = text.replace(/,(\s*[}\]])/g, '$1');
+        
+        // Fix unescaped double quotes inside strings (heuristic approach)
+        // Look for patterns like: "value with "quote" in it"
+        // This is tricky because we need to identify which quotes are structural
+        
+        // Count unbalanced brackets and try to close them
+        let braceCount = 0;
+        let bracketCount = 0;
+        for (const char of text) {
+            if (char === '{') braceCount++;
+            else if (char === '}') braceCount--;
+            else if (char === '[') bracketCount++;
+            else if (char === ']') bracketCount--;
+        }
+        
+        // Close unclosed brackets (truncated JSON)
+        while (bracketCount > 0) {
+            text += ']';
+            bracketCount--;
+        }
+        while (braceCount > 0) {
+            text += '}';
+            braceCount--;
+        }
+        
+        // Remove any text after the final closing brace
+        const lastBrace = text.lastIndexOf('}');
+        if (lastBrace !== -1 && lastBrace < text.length - 1) {
+            text = text.substring(0, lastBrace + 1);
+        }
+        
+        return text;
     }
 
     function parseProfileResponse(response) {
@@ -1055,13 +1367,42 @@ Remember to return valid JSON matching the specified structure.`;
         const firstBrace = text.indexOf('{');
         const lastBrace = text.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace > firstBrace) {
+            const jsonSubstring = text.substring(firstBrace, lastBrace + 1);
+            
             try {
-                const jsonSubstring = text.substring(firstBrace, lastBrace + 1);
                 const parsed = JSON.parse(jsonSubstring);
                 console.log('[WritingAnalyzer] Extracted JSON parse successful');
                 return parsed;
             } catch (e) { 
                 console.log('[WritingAnalyzer] Extracted JSON parse failed:', e.message);
+            }
+            
+            // Try with sanitization for bad escape characters
+            try {
+                const sanitized = sanitizeJsonString(jsonSubstring);
+                const parsed = JSON.parse(sanitized);
+                console.log('[WritingAnalyzer] Sanitized JSON parse successful');
+                return parsed;
+            } catch (e) {
+                console.log('[WritingAnalyzer] Sanitized JSON parse failed:', e.message);
+            }
+            
+            // Try with repair for trailing commas, truncation, etc.
+            try {
+                const sanitized = sanitizeJsonString(jsonSubstring);
+                const repaired = repairJson(sanitized);
+                const parsed = JSON.parse(repaired);
+                console.log('[WritingAnalyzer] Repaired JSON parse successful');
+                return parsed;
+            } catch (e) {
+                console.log('[WritingAnalyzer] Repaired JSON parse failed:', e.message);
+            }
+            
+            // Last resort: extract values using regex from malformed JSON
+            const regexProfile = extractProfileFromMalformedJson(jsonSubstring);
+            if (regexProfile) {
+                console.log('[WritingAnalyzer] Regex extraction from malformed JSON successful');
+                return regexProfile;
             }
         }
         
@@ -1076,7 +1417,18 @@ Remember to return valid JSON matching the specified structure.`;
         // Return a basic structure if parsing fails
         console.error('[WritingAnalyzer] All parsing methods failed');
         return {
+            mastery_level: 3,
+            mastery_label: 'Competent',
+            technical_level: 'Articulate',
             complexity_score: 5,
+            voice_consistency: 5,
+            lexical_diversity: 5,
+            technical_density: 5,
+            pattern_density: 3,
+            emotional_resonance: 5,
+            authenticity: 5,
+            narrative_flow: 5,
+            persuasive_clarity: 5,
             reading_level: 'Unable to determine',
             style: { summary: 'Analysis could not be parsed. Please try again with a different API provider.' },
             tone: { summary: 'Analysis could not be parsed.' },
@@ -1088,10 +1440,121 @@ Remember to return valid JSON matching the specified structure.`;
         };
     }
     
+    /**
+     * Extract profile values from malformed JSON using regex.
+     * Used when JSON parsing fails but the response contains valid-looking data.
+     */
+    function extractProfileFromMalformedJson(text) {
+        // Helper to extract a number value
+        const extractNumber = (key) => {
+            const match = text.match(new RegExp(`"${key}"\\s*:\\s*(\\d+(?:\\.\\d+)?)`));
+            return match ? parseFloat(match[1]) : null;
+        };
+        
+        // Helper to extract a string value
+        const extractString = (key) => {
+            const match = text.match(new RegExp(`"${key}"\\s*:\\s*"([^"]*?)"`));
+            return match ? match[1] : null;
+        };
+        
+        // Helper to extract an array of strings
+        const extractStringArray = (key) => {
+            const match = text.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]*?)\\]`));
+            if (!match) return [];
+            const items = match[1].match(/"([^"]*?)"/g);
+            return items ? items.map(s => s.replace(/"/g, '')) : [];
+        };
+        
+        // Try to extract main fields
+        const masteryLevel = extractNumber('mastery_level');
+        const masteryLabel = extractString('mastery_label');
+        const technicalLevel = extractString('technical_level');
+        const complexityScore = extractNumber('complexity_score');
+        const voiceConsistency = extractNumber('voice_consistency');
+        
+        // If we can't even get basic fields, return null
+        if (!masteryLabel && !technicalLevel && !complexityScore) {
+            return null;
+        }
+        
+        // Build profile from extracted values
+        const profile = {
+            mastery_level: masteryLevel || 4,
+            mastery_label: masteryLabel || 'Proficient',
+            technical_level: technicalLevel || 'Articulate',
+            complexity_score: complexityScore || 6,
+            voice_consistency: voiceConsistency || extractNumber('voice_consistency') || 6,
+            lexical_diversity: extractNumber('lexical_diversity') || 6,
+            technical_density: extractNumber('technical_density') || 5,
+            pattern_density: extractNumber('pattern_density') || 5,
+            emotional_resonance: extractNumber('emotional_resonance') || 6,
+            authenticity: extractNumber('authenticity') || 6,
+            narrative_flow: extractNumber('narrative_flow') || 6,
+            persuasive_clarity: extractNumber('persuasive_clarity') || 6,
+            style: {
+                formality: extractString('formality') || 'semi-formal',
+                descriptiveness: extractString('descriptiveness') || 'moderate',
+                directness: extractString('directness') || 'direct',
+                perspective: extractString('perspective') || 'first person',
+                summary: extractString('summary') || 'Style extracted from partial JSON data.'
+            },
+            tone: {
+                primary: extractString('primary') || 'professional',
+                secondary: extractStringArray('secondary'),
+                emotional_register: extractString('emotional_register') || 'neutral',
+                summary: ''
+            },
+            vocabulary: {
+                complexity: extractString('complexity') || 'moderate',
+                characteristic_words: extractStringArray('characteristic_words'),
+                phrases: extractStringArray('phrases'),
+                summary: ''
+            },
+            structure: {
+                sentence_length: extractString('sentence_length') || 'varied',
+                variety: extractString('variety') || 'mixed',
+                paragraph_style: extractString('paragraph_style') || 'focused',
+                summary: ''
+            },
+            markers: [],
+            patterns: extractStringArray('patterns'),
+            profile_summary: extractString('profile_summary') || 'Profile extracted from partially valid JSON response.'
+        };
+        
+        // Try to extract markers array (more complex structure)
+        const markersMatch = text.match(/"markers"\s*:\s*\[([\s\S]*?)\]/);
+        if (markersMatch) {
+            const markerItems = markersMatch[1].match(/\{[^}]+\}/g);
+            if (markerItems) {
+                profile.markers = markerItems.map(item => {
+                    const typeMatch = item.match(/"type"\s*:\s*"([^"]+)"/);
+                    const descMatch = item.match(/"description"\s*:\s*"([^"]+)"/);
+                    return {
+                        type: typeMatch ? typeMatch[1] : 'general',
+                        description: descMatch ? descMatch[1] : ''
+                    };
+                }).filter(m => m.description);
+            }
+        }
+        
+        return profile;
+    }
+    
     function extractProfileFromProse(text) {
         // Try to extract useful information from prose response
         const profile = {
+            mastery_level: 4,
+            mastery_label: 'Proficient',
+            technical_level: 'Refined',
             complexity_score: 7,
+            voice_consistency: 6,
+            lexical_diversity: 6,
+            technical_density: 5,
+            pattern_density: 5,
+            emotional_resonance: 6,
+            authenticity: 6,
+            narrative_flow: 6,
+            persuasive_clarity: 6,
             reading_level: 'College level',
             style: { summary: '' },
             tone: { summary: '' },
@@ -1101,6 +1564,41 @@ Remember to return valid JSON matching the specified structure.`;
             patterns: [],
             profile_summary: ''
         };
+        
+        // Try to detect mastery level from prose
+        if (/master|exceptional|transcendent|signature|instantly recognizable/i.test(text)) {
+            profile.mastery_level = 6;
+            profile.mastery_label = 'Masterful';
+        } else if (/expert|sophisticated|deep mastery|distinctive voice/i.test(text)) {
+            profile.mastery_level = 5;
+            profile.mastery_label = 'Expert';
+        } else if (/proficient|consistent|intuitive|holistic/i.test(text)) {
+            profile.mastery_level = 4;
+            profile.mastery_label = 'Proficient';
+        } else if (/competent|deliberate|organized|clear purpose/i.test(text)) {
+            profile.mastery_level = 3;
+            profile.mastery_label = 'Competent';
+        } else if (/emerging|developing|beginning|basic/i.test(text)) {
+            profile.mastery_level = 2;
+            profile.mastery_label = 'Emerging';
+        }
+        
+        // Try to detect technical level from prose (using new descriptive labels)
+        if (/specialized|expert.*discourse|maximum density|technical jargon/i.test(text)) {
+            profile.technical_level = 'Specialized';
+        } else if (/graduate|scholarly|academic rigor|technical precision/i.test(text)) {
+            profile.technical_level = 'Scholarly';
+        } else if (/elevated|complex ideas|rich vocabulary|undergraduate|college/i.test(text)) {
+            profile.technical_level = 'Elevated';
+        } else if (/refined|sophisticated|nuanced|deliberate rhythm/i.test(text)) {
+            profile.technical_level = 'Refined';
+        } else if (/articulate|polished|thoughtful|confident voice/i.test(text)) {
+            profile.technical_level = 'Articulate';
+        } else if (/conversational|natural flow|balanced|engaging/i.test(text)) {
+            profile.technical_level = 'Conversational';
+        } else if (/accessible|clear|direct|simple|broad audience/i.test(text)) {
+            profile.technical_level = 'Accessible';
+        }
         
         // Extract style info
         const styleMatch = text.match(/(?:style|formality|writing style)[:\s]*([^.]+\.)/i);
