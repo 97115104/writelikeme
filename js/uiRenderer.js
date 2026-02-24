@@ -200,6 +200,48 @@ const UIRenderer = (() => {
             .slice(0, maxResults);
     }
 
+    // Trait explanations for tooltips
+    const TRAIT_EXPLANATIONS = {
+        // Vocabulary complexity
+        'simple vocabulary': 'Uses everyday words that are easy to understand',
+        'accessible vocabulary': 'Clear word choices that reach a broad audience',
+        'plain vocabulary': 'Straightforward language without jargon',
+        'moderate vocabulary': 'Balanced mix of common and more precise words',
+        'varied vocabulary': 'Uses a diverse range of words for different effects',
+        'sophisticated vocabulary': 'Rich, nuanced word choices that add depth',
+        'complex vocabulary': 'Advanced terminology and intricate phrasing',
+        'ornate vocabulary': 'Elaborate, decorative language',
+        'antiquated vocabulary': 'Older, classical word choices',
+        // Formality
+        'casual style': 'Relaxed, informal tone like talking to a friend',
+        'conversational style': 'Natural, dialogue-like flow',
+        'informal style': 'Loose structure with personal touches',
+        'moderate style': 'Balanced between casual and formal',
+        'formal style': 'Structured, professional presentation',
+        'literary style': 'Artistic prose with careful crafting',
+        'academic style': 'Scholarly, research-oriented approach',
+        // Tone
+        'epic tone': 'Grand, sweeping narrative voice',
+        'gritty tone': 'Raw, realistic, unflinching',
+        'poetic tone': 'Lyrical, musical quality to the prose',
+        'whimsical tone': 'Playful, imaginative, lighthearted',
+        'conversational tone': 'Like talking directly to the reader',
+        'satirical tone': 'Uses irony and wit to critique',
+        'introspective tone': 'Deeply thoughtful and reflective',
+        'dark tone': 'Explores shadow side of experience',
+        'warm tone': 'Friendly, inviting, comforting',
+        // Sentence structure
+        'short sentences': 'Punchy, direct impact',
+        'medium sentences': 'Balanced rhythm and flow',
+        'long sentences': 'Extended thoughts with complex structure',
+        'varied sentences': 'Mix of lengths for dynamic pacing',
+        'flowing sentences': 'Smooth, connected prose',
+        // Directness
+        'direct approach': 'Gets to the point clearly',
+        'indirect approach': 'Builds meaning through suggestion',
+        'very direct approach': 'Extremely straightforward, no hedging'
+    };
+
     // Find shared traits between profile and author
     function findSharedTraits(profile, author) {
         const traits = [];
@@ -288,6 +330,15 @@ const UIRenderer = (() => {
                 const sharedTraits = findSharedTraits(profile, author);
                 const confidence = Math.round(match.score * 100);
 
+                // Create trait spans with tooltips
+                const traitsHtml = sharedTraits.map(trait => {
+                    const tooltip = TRAIT_EXPLANATIONS[trait.toLowerCase()] || '';
+                    if (tooltip) {
+                        return `<span data-tooltip="${escapeHtml(tooltip)}">${escapeHtml(trait)}</span>`;
+                    }
+                    return escapeHtml(trait);
+                }).join(', ');
+
                 html += `
                     <div class="similar-author-card">
                         <div class="similar-author-main">
@@ -297,7 +348,7 @@ const UIRenderer = (() => {
                         ${sharedTraits.length > 0 ? `
                             <div class="similar-author-traits">
                                 <span class="traits-label">You both share:</span>
-                                <span class="traits-list">${sharedTraits.map(t => escapeHtml(t)).join(', ')}</span>
+                                <span class="traits-list">${traitsHtml}</span>
                             </div>
                         ` : ''}
                         <div class="similar-author-desc">${escapeHtml(author.description)}</div>
@@ -333,6 +384,15 @@ const UIRenderer = (() => {
                 const author = match.author;
                 const sharedTraits = findSharedTraits(profile, author);
 
+                // Create trait spans with tooltips
+                const traitsHtml = sharedTraits.map(trait => {
+                    const tooltip = TRAIT_EXPLANATIONS[trait.toLowerCase()] || '';
+                    if (tooltip) {
+                        return `<span data-tooltip="${escapeHtml(tooltip)}">${escapeHtml(trait)}</span>`;
+                    }
+                    return escapeHtml(trait);
+                }).join(', ');
+
                 html += `
                     <div class="similar-author-card">
                         <div class="similar-author-main">
@@ -342,7 +402,7 @@ const UIRenderer = (() => {
                         ${sharedTraits.length > 0 ? `
                             <div class="similar-author-traits">
                                 <span class="traits-label">You both share:</span>
-                                <span class="traits-list">${sharedTraits.map(t => escapeHtml(t)).join(', ')}</span>
+                                <span class="traits-list">${traitsHtml}</span>
                             </div>
                         ` : ''}
                         <div class="similar-author-desc">${escapeHtml(author.description)}</div>
@@ -354,6 +414,89 @@ const UIRenderer = (() => {
             container.innerHTML = html;
         } catch (err) {
             console.error('[WriteMe] Error rendering similar authors in modal:', err);
+            container.innerHTML = '';
+        }
+    }
+
+    // Render similar authors in any container by ID (compact = single line for quick view)
+    async function renderSimilarAuthorsInContainer(profile, containerId, compact = false) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        try {
+            const matches = await findSimilarAuthors(profile, 2);
+
+            if (matches.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            if (compact) {
+                // Compact version showing both authors with brief explanation
+                let html = '<div class="similar-authors-compact-list">';
+                
+                for (const match of matches) {
+                    const author = match.author;
+                    const sharedTraits = findSharedTraits(profile, author);
+                    const traitText = sharedTraits.length > 0 
+                        ? sharedTraits.slice(0, 2).join(', ')
+                        : author.genre.toLowerCase() + ' sensibilities';
+                    
+                    // Get tooltip for the first trait
+                    const firstTrait = sharedTraits[0]?.toLowerCase() || '';
+                    const tooltip = TRAIT_EXPLANATIONS[firstTrait] || '';
+                    
+                    html += `
+                        <div class="similar-author-compact-item">
+                            <strong>${escapeHtml(author.name)}</strong>
+                            <span ${tooltip ? `data-tooltip="${escapeHtml(tooltip)}"` : ''}>${escapeHtml(traitText)}</span>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                container.innerHTML = html;
+                return;
+            }
+
+            let html = '<div class="similar-authors">';
+            html += '<div class="similar-authors-header"><span class="similar-authors-label">You Write Like</span></div>';
+            html += '<div class="similar-authors-content">';
+            
+            for (const match of matches) {
+                const author = match.author;
+                const sharedTraits = findSharedTraits(profile, author);
+
+                // Create trait spans with tooltips
+                const traitsHtml = sharedTraits.map(trait => {
+                    const tooltip = TRAIT_EXPLANATIONS[trait.toLowerCase()] || '';
+                    if (tooltip) {
+                        return `<span data-tooltip="${escapeHtml(tooltip)}">${escapeHtml(trait)}</span>`;
+                    }
+                    return escapeHtml(trait);
+                }).join(', ');
+
+                html += `
+                    <div class="similar-author-card">
+                        <div class="similar-author-main">
+                            <span class="similar-author-name">${escapeHtml(author.name)}</span>
+                            <span class="similar-author-genre">${escapeHtml(author.genre)}</span>
+                        </div>
+                        ${sharedTraits.length > 0 ? `
+                            <div class="similar-author-traits">
+                                <span class="traits-label">You both share:</span>
+                                <span class="traits-list">${traitsHtml}</span>
+                            </div>
+                        ` : ''}
+                        <div class="similar-author-desc">${escapeHtml(author.description)}</div>
+                    </div>
+                `;
+            }
+            
+            html += '</div></div>';
+            container.innerHTML = html;
+        } catch (err) {
+            console.error('[WriteMe] Error rendering similar authors:', err);
             container.innerHTML = '';
         }
     }
@@ -762,6 +905,7 @@ const UIRenderer = (() => {
     return {
         renderProfile,
         renderSimilarAuthorsInModal,
+        renderSimilarAuthorsInContainer,
         renderSamplesList,
         renderSlopCheck,
         showLoading,

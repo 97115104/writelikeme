@@ -2073,6 +2073,105 @@
     font-style: italic;
 }
 
+/* Similar Author Compact (Quick View) */
+.similar-authors-compact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, #f8f4ff 0%, #f0f7ff 100%);
+    border-radius: 6px;
+}
+
+.similar-authors-compact-list::before {
+    content: 'You write like';
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.similar-author-compact-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.similar-author-compact-item strong {
+    color: #4a3f6b;
+}
+
+.similar-author-compact-item .compact-traits {
+    color: #6b5b95;
+}
+
+/* Tooltip System */
+[data-tooltip] {
+    position: relative;
+    cursor: help;
+    border-bottom: 1px dotted currentColor;
+}
+
+[data-tooltip]::before,
+[data-tooltip]::after {
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
+}
+
+[data-tooltip]::before {
+    content: attr(data-tooltip);
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 12px;
+    background: #333;
+    color: #fff;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.4;
+    white-space: normal;
+    max-width: 250px;
+    min-width: 150px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    text-align: left;
+}
+
+[data-tooltip]::after {
+    content: '';
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #333;
+}
+
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Tooltip positioned below (for elements near top of viewport) */
+.similar-authors-modal [data-tooltip]::before {
+    bottom: auto;
+    top: calc(100% + 8px);
+}
+
+.similar-authors-modal [data-tooltip]::after {
+    bottom: auto;
+    top: calc(100% + 2px);
+    border-top-color: transparent;
+    border-bottom-color: #333;
+}
+
 /* Similar Authors in Modal */
 .similar-authors-modal {
     margin-bottom: 16px;

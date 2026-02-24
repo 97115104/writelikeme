@@ -2699,6 +2699,9 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         const profile = state.profile;
         let html = '';
 
+        // Similar authors placeholder (will be filled async)
+        html += `<div id="similar-authors-quick" class="similar-authors-modal"></div>`;
+
         // Summary
         if (profile.profile_summary) {
             html += `<div class="profile-summary">${escapeHtml(profile.profile_summary)}</div>`;
@@ -2718,6 +2721,12 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         }
 
         elements.quickProfileContent.innerHTML = html;
+        
+        // Render similar authors (async, compact mode for quick view)
+        if (typeof UIRenderer.renderSimilarAuthorsInContainer === 'function') {
+            UIRenderer.renderSimilarAuthorsInContainer(profile, 'similar-authors-quick', true);
+        }
+        
         showModal('quick-profile-modal');
     }
 

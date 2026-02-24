@@ -747,6 +747,210 @@
         "dark_humor": true
       },
       "description": "Known for sharp, sardonic prose, feminist dystopias, dark humor, and unflinching examinations of power and gender."
+    },
+    {
+      "id": "wilde",
+      "name": "Oscar Wilde",
+      "genre": "Literary Fiction",
+      "era": "Victorian",
+      "notable_works": ["The Picture of Dorian Gray", "The Importance of Being Earnest", "De Profundis"],
+      "style": {
+        "formality": "formal",
+        "descriptiveness": "ornate",
+        "directness": "indirect",
+        "perspective": "third person"
+      },
+      "tone": {
+        "primary": "witty",
+        "secondary": ["satirical", "ironic", "decadent"],
+        "emotional_register": "elevated"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["beauty", "art", "sin", "pleasure", "society", "charming", "dreadful", "exquisite"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "elegant",
+        "pacing": "measured"
+      },
+      "markers": {
+        "epigrams": true,
+        "social_satire": true,
+        "aestheticism": true,
+        "paradox": true
+      },
+      "description": "Known for razor-sharp wit, brilliant epigrams, aesthetic philosophy, and satirical observations on Victorian society."
+    },
+    {
+      "id": "baldwin",
+      "name": "James Baldwin",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["Giovanni's Room", "Go Tell It on the Mountain", "The Fire Next Time"],
+      "style": {
+        "formality": "literary",
+        "descriptiveness": "evocative",
+        "directness": "direct",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "passionate",
+        "secondary": ["urgent", "intimate", "prophetic"],
+        "emotional_register": "intense"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["love", "fire", "terror", "rage", "flesh", "light", "darkness", "freedom"]
+      },
+      "structure": {
+        "sentence_length": "long",
+        "paragraph_style": "flowing",
+        "pacing": "rhythmic"
+      },
+      "markers": {
+        "social_commentary": true,
+        "lyrical_prose": true,
+        "autobiographical": true,
+        "biblical_allusions": true
+      },
+      "description": "Known for passionate, musical prose, unflinching examinations of race and sexuality, and prophetic moral clarity."
+    },
+    {
+      "id": "capote",
+      "name": "Truman Capote",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["In Cold Blood", "Breakfast at Tiffany's", "Other Voices, Other Rooms"],
+      "style": {
+        "formality": "polished",
+        "descriptiveness": "precise",
+        "directness": "indirect",
+        "perspective": "third person"
+      },
+      "tone": {
+        "primary": "observant",
+        "secondary": ["melancholic", "gothic", "wry"],
+        "emotional_register": "controlled"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["delicate", "peculiar", "shadow", "light", "strange", "lovely", "quiet", "memory"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "crystalline",
+        "pacing": "deliberate"
+      },
+      "markers": {
+        "southern_gothic": true,
+        "precise_detail": true,
+        "journalistic": true,
+        "atmospheric": true
+      },
+      "description": "Known for crystalline prose, Gothic atmospheres, precise observation, and pioneering literary nonfiction."
+    },
+    {
+      "id": "highsmith",
+      "name": "Patricia Highsmith",
+      "genre": "Mystery",
+      "era": "20th Century",
+      "notable_works": ["The Talented Mr. Ripley", "Strangers on a Train", "The Price of Salt"],
+      "style": {
+        "formality": "moderate",
+        "descriptiveness": "precise",
+        "directness": "direct",
+        "perspective": "third person limited"
+      },
+      "tone": {
+        "primary": "unsettling",
+        "secondary": ["clinical", "suspenseful", "detached"],
+        "emotional_register": "controlled"
+      },
+      "vocabulary": {
+        "complexity": "moderate",
+        "characteristic_words": ["cold", "precise", "careful", "quiet", "smooth", "pleasant", "ordinary", "nerve"]
+      },
+      "structure": {
+        "sentence_length": "medium",
+        "paragraph_style": "clean",
+        "pacing": "measured"
+      },
+      "markers": {
+        "psychological_depth": true,
+        "amoral_protagonists": true,
+        "tension_building": true,
+        "understated_menace": true
+      },
+      "description": "Known for masterful psychological suspense, amoral protagonists, spare prose, and profound unease beneath ordinary surfaces."
+    },
+    {
+      "id": "lorde",
+      "name": "Audre Lorde",
+      "genre": "Literary Fiction",
+      "era": "20th Century",
+      "notable_works": ["Zami: A New Spelling of My Name", "Sister Outsider", "The Cancer Journals"],
+      "style": {
+        "formality": "literary",
+        "descriptiveness": "sensory",
+        "directness": "direct",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "fierce",
+        "secondary": ["lyrical", "intimate", "confrontational"],
+        "emotional_register": "intense"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["silence", "survival", "erotic", "power", "anger", "sister", "warrior", "tongue"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "deliberate",
+        "pacing": "rhythmic"
+      },
+      "markers": {
+        "intersectional": true,
+        "autobiographical": true,
+        "poetic_prose": true,
+        "political": true
+      },
+      "description": "Known for fierce, lyrical prose, intersectional feminist voice, and transforming silence into language and action."
+    },
+    {
+      "id": "waters",
+      "name": "Sarah Waters",
+      "genre": "Literary Fiction",
+      "era": "Contemporary",
+      "notable_works": ["Fingersmith", "Tipping the Velvet", "The Night Watch"],
+      "style": {
+        "formality": "literary",
+        "descriptiveness": "rich",
+        "directness": "indirect",
+        "perspective": "first person"
+      },
+      "tone": {
+        "primary": "atmospheric",
+        "secondary": ["suspenseful", "sensual", "gothic"],
+        "emotional_register": "intense"
+      },
+      "vocabulary": {
+        "complexity": "sophisticated",
+        "characteristic_words": ["velvet", "silk", "shadow", "touch", "secret", "night", "hand", "heart"]
+      },
+      "structure": {
+        "sentence_length": "varied",
+        "paragraph_style": "immersive",
+        "pacing": "deliberate"
+      },
+      "markers": {
+        "historical_fiction": true,
+        "plot_twists": true,
+        "sensory_detail": true,
+        "unreliable_narrator": true
+      },
+      "description": "Known for lush Victorian settings, intricate plot twists, sensual prose, and compelling queer narratives."
     }
   ],
   "matching_weights": {
