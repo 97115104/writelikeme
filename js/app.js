@@ -1162,6 +1162,20 @@
         pendingGenerationPrompt = null;
 
         if (!prompt) return;
+        
+        if (!state.profile) {
+            UIRenderer.showError('No writing profile found. Please analyze your writing samples first.');
+            return;
+        }
+        
+        // Validate profile has required structure
+        if (!state.profile.style && !state.profile.tone && !state.profile.vocabulary) {
+            UIRenderer.showError('Invalid writing profile. Please re-analyze your writing samples.');
+            return;
+        }
+        
+        console.log('[WriteMe] Starting generation with profile:', state.profile ? 'present' : 'null');
+        console.log('[WriteMe] Profile summary:', state.profile?.profile_summary?.substring(0, 100) || 'No summary');
 
         UIRenderer.hideError();
         elements.generateLoading.classList.remove('hidden');
@@ -1310,6 +1324,7 @@
             state.profStyleOverride = null;
 
         } catch (err) {
+            console.error('[WriteMe] Generation error:', err);
             elements.generateLoading.classList.add('hidden');
 
             if (err.puterFallback) {

@@ -1000,7 +1000,8 @@ Return ONLY the fixed text. No explanations, no comments, no "Here's the revised
     async function analyzeWriting(samples, apiConfig) {
         console.log('[WritingAnalyzer] Starting analysis with', samples.length, 'samples');
         
-        const combinedSamples = samples.map((s, i) => `--- Sample ${i + 1} ---\n${s.content}`).join('\n\n');
+        // Combine samples with clear separators
+        const combinedSamples = samples.map((s, i) => `--- Sample ${i + 1} ---\n${s.content || ''}`).join('\n\n');
         console.log('[WritingAnalyzer] Combined samples length:', combinedSamples.length, 'characters');
 
         const userMessage = `Analyze these writing samples and create a detailed writing profile:
@@ -1037,33 +1038,107 @@ Remember to return valid JSON matching the specified structure.`;
 
         // Strip markdown code fences
         text = text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+        
+        // Also strip any code fences in the middle
+        text = text.replace(/```json\s*/g, '').replace(/```\s*/g, '');
 
         // Try direct parse
         try {
-            return JSON.parse(text);
-        } catch { /* continue */ }
+            const parsed = JSON.parse(text);
+            console.log('[WritingAnalyzer] Direct JSON parse successful');
+            return parsed;
+        } catch (e) { 
+            console.log('[WritingAnalyzer] Direct parse failed:', e.message);
+        }
 
         // Find first { ... last }
         const firstBrace = text.indexOf('{');
         const lastBrace = text.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace > firstBrace) {
             try {
-                return JSON.parse(text.substring(firstBrace, lastBrace + 1));
-            } catch { /* continue */ }
+                const jsonSubstring = text.substring(firstBrace, lastBrace + 1);
+                const parsed = JSON.parse(jsonSubstring);
+                console.log('[WritingAnalyzer] Extracted JSON parse successful');
+                return parsed;
+            } catch (e) { 
+                console.log('[WritingAnalyzer] Extracted JSON parse failed:', e.message);
+            }
+        }
+        
+        // If the response is prose, try to extract useful info
+        console.log('[WritingAnalyzer] Attempting to extract profile from prose...');
+        const proseProfile = extractProfileFromProse(text);
+        if (proseProfile.profile_summary !== 'The writing profile could not be fully analyzed.') {
+            console.log('[WritingAnalyzer] Extracted profile from prose');
+            return proseProfile;
         }
 
         // Return a basic structure if parsing fails
+        console.error('[WritingAnalyzer] All parsing methods failed');
         return {
             complexity_score: 5,
             reading_level: 'Unable to determine',
-            style: { summary: 'Analysis could not be parsed. Please try again.' },
+            style: { summary: 'Analysis could not be parsed. Please try again with a different API provider.' },
             tone: { summary: 'Analysis could not be parsed.' },
             vocabulary: { summary: 'Analysis could not be parsed.' },
             structure: { summary: 'Analysis could not be parsed.' },
             markers: [],
             patterns: [],
-            profile_summary: 'The writing profile could not be fully analyzed. Please try with different samples.'
+            profile_summary: 'The writing profile could not be fully analyzed. The API returned prose instead of JSON. Try using a different model or API provider.'
         };
+    }
+    
+    function extractProfileFromProse(text) {
+        // Try to extract useful information from prose response
+        const profile = {
+            complexity_score: 7,
+            reading_level: 'College level',
+            style: { summary: '' },
+            tone: { summary: '' },
+            vocabulary: { summary: '', characteristic_words: [], phrases: [] },
+            structure: { summary: '' },
+            markers: [],
+            patterns: [],
+            profile_summary: ''
+        };
+        
+        // Extract style info
+        const styleMatch = text.match(/(?:style|formality|writing style)[:\s]*([^.]+\.)/i);
+        if (styleMatch) profile.style.summary = styleMatch[1].trim();
+        
+        // Extract tone info
+        const toneMatch = text.match(/(?:tone|voice)[:\s]*([^.]+\.)/i);
+        if (toneMatch) {
+            profile.tone.summary = toneMatch[1].trim();
+            profile.tone.primary = toneMatch[1].split(/[,;]/)[0].trim().toLowerCase();
+        }
+        
+        // Extract vocabulary patterns
+        const vocabMatch = text.match(/(?:vocabulary|word choice|lexical)[:\s]*([^.]+\.)/i);
+        if (vocabMatch) profile.vocabulary.summary = vocabMatch[1].trim();
+        
+        // Look for quoted phrases
+        const phrases = text.match(/"([^"]+)"/g);
+        if (phrases) {
+            profile.vocabulary.phrases = phrases.slice(0, 10).map(p => p.replace(/"/g, ''));
+        }
+        
+        // Try to build a profile summary from the text
+        const paragraphs = text.split(/\n\n+/);
+        if (paragraphs.length > 0) {
+            // Use first substantial paragraph as summary
+            const summary = paragraphs.find(p => p.length > 100 && !p.startsWith('#'));
+            if (summary) {
+                profile.profile_summary = summary.substring(0, 500).trim();
+            }
+        }
+        
+        // If we couldn't extract anything useful, return indication
+        if (!profile.profile_summary && !profile.style.summary && !profile.tone.summary) {
+            profile.profile_summary = 'The writing profile could not be fully analyzed.';
+        }
+        
+        return profile;
     }
 
     async function generateContent(profile, prompt, contentType, apiConfig, platformContext = '') {
