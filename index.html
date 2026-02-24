@@ -26,74 +26,24 @@
                 <button id="btn-close-info" class="btn-modal-close">&times;</button>
             </div>
             <div class="modal-body">
-                <p><strong>Write Like Me</strong> is a free, serverless tool that analyzes your writing samples and creates a detailed writing profile. Use that profile to generate new text in your unique style, free of common AI writing patterns.</p>
+                <p><strong>Write Like Me</strong> analyzes your writing samples and generates content in your unique voice—free of common AI patterns.</p>
 
-                <h4>How it works</h4>
-                <p>Share your writing samples via URL, copy-paste, or file upload. The tool analyzes your style, tone, word choice, sentence structure, and other characteristics to build a comprehensive writing profile. Use the profile to generate new content that matches your voice.</p>
+                <h4>1. Create Your Profile</h4>
+                <p>Add samples via <strong>URL</strong>, <strong>paste</strong>, or <strong>upload</strong> (.txt, .md, .rtf, .pdf, Scrivener folders). Click <strong>Analyze</strong> to extract your voice patterns, then <strong>Save to Browser</strong> for reuse.</p>
 
-                <h4>Advanced slop detection</h4>
-                <p>The heart of Write Like Me is its comprehensive AI pattern detection system based on extensive research into what makes AI writing sound artificial. The tool detects and removes:</p>
-                <p><strong>Critical patterns</strong> — Em dashes, antithetical constructions, sycophantic phrases, bullet lists, third-person self-references. These are always fixed automatically.</p>
-                <p><strong>High priority</strong> — Lazy declarative openers ("Here's the thing:"), colon-based declarations, formulaic transitions (However, Moreover), meta-commentary.</p>
-                <p><strong>Medium priority</strong> — Overly formal phrasing, AI vocabulary clusters (landscape, ecosystem, journey), passive voice, engagement bait.</p>
-                <p><strong>Low priority</strong> — Excessive intensifiers, hedge word clusters, filler adjectives.</p>
-                <p><strong>Formatting issues</strong> — Wall of text without breaks, very long paragraphs, excessive whitespace, extra long sentences.</p>
-                <p>Generated text receives a quality score from 0-100 showing how authentic it sounds. Text with critical or formatting issues is automatically fixed or rewritten.</p>
+                <h4>2. Generate Content</h4>
+                <p>Select a content type, write your prompt, and click <strong>Generate</strong>. Mention platforms like "X" or "LinkedIn" for auto-adapted style. Use <strong>style tags</strong> (Witty, Funny, Concise, etc.) to guide tone.</p>
 
-                <h4>Platform-aware generation</h4>
-                <p>Mention a social platform in your prompt and the tool automatically adapts brevity and style:</p>
-                <p><strong>X/Twitter</strong> — Ultra-brief, 1-2 sentences, punchy.</p>
-                <p><strong>LinkedIn</strong> — Professional but concise, 100-200 words max.</p>
-                <p><strong>Instagram/TikTok</strong> — Brief captions, hook-focused.</p>
-                <p><strong>Threads/Bluesky</strong> — Brief takes, 2-4 sentences.</p>
-                <p><strong>Email/Substack</strong> — Professional structure with appropriate length.</p>
-                <p>For professional platforms, you can choose to adjust formality while maintaining your voice.</p>
+                <h4>3. Refine & Share</h4>
+                <p>Edit directly in the output area. Add feedback via <strong>Style Studio</strong>. Browse <strong>revision history</strong> to restore previous versions. Share directly to X, LinkedIn, Facebook, or Reddit.</p>
 
-                <h4>One-click sharing</h4>
-                <p>After generating content for social media, share directly to X, LinkedIn, Facebook, or Reddit. If your prompt mentioned a URL, it's automatically appended for clean link sharing.</p>
+                <h4>AI Pattern Detection</h4>
+                <p>Detects and removes patterns that make AI writing obvious: formulaic transitions, em dashes, bullet lists, AI vocabulary clusters, and more. Output receives a <strong>quality score (0-100)</strong>.</p>
 
-                <h4>Input methods</h4>
-                <p><strong>URL</strong> — Enter URLs to blog posts, articles, or web pages. The tool fetches and extracts the text content automatically.</p>
-                <p><strong>Paste</strong> — Copy and paste writing samples directly into the text area. Add multiple samples separated by line breaks.</p>
-                <p><strong>Upload</strong> — Upload text files (.txt, .md) containing your writing samples. Supports batch uploads of multiple files.</p>
-                <p><strong>Load Profile</strong> — Paste or upload a previously saved profile JSON to skip analysis.</p>
+                <h4>API Providers</h4>
+                <p><strong>Puter GPT-OSS</strong> (default, free) · <strong>OpenRouter</strong> · <strong>Anthropic</strong> · <strong>OpenAI</strong> · <strong>Google Gemini</strong> · <strong>Ollama</strong> (local) · <strong>Custom endpoint</strong></p>
 
-                <h4>Content types</h4>
-                <p>Select a content category, then choose Personal or Professional tone where applicable:</p>
-                <p><strong>Social Media</strong> — Personal (X, Instagram) or Professional (LinkedIn). Adapted for platform style and brevity.</p>
-                <p><strong>Blog</strong> — Personal (conversational, story-driven) or Professional (informative, authoritative).</p>
-                <p><strong>Long-form</strong> — Articles, essays, reports with sustained arguments.</p>
-                <p><strong>Creative</strong> — Fiction, narrative, experimental styles.</p>
-                <p><strong>README / Documentation</strong> — Technical docs, clear and structured.</p>
-                <p><strong>Marketing Copy</strong> — Persuasive, benefit-focused, compelling.</p>
-                <p><strong>Email</strong> — Personal or Professional correspondence with proper formatting.</p>
-                <p><strong>Chat / Text</strong> — Ultra-brief, casual messaging style.</p>
-                <p><strong>Bio</strong> — Personal or Professional about sections.</p>
-                <p><strong>Cover Letter</strong> — Professional applications with proper greeting and sign-off.</p>
-
-                <h4>URL fetching</h4>
-                <p>When you include URLs in your prompt, they appear as artifacts below the input. Click any URL to preview its fetched content, edit it if needed, or fetch it if not yet loaded. The content is used as context when generating.</p>
-
-                <h4>GitHub repo detection</h4>
-                <p>GitHub repository URLs are detected automatically. The tool fetches the README and repository metadata (description, language, stars) to provide technical context when generating content about code projects.</p>
-
-                <h4>Style sketch</h4>
-                <p>Based on your prompt, the tool detects relevant tones and emotional contexts. For example, "breakup" triggers a Somber tone, while "less technical audience" suggests Accessible style. Click tags to toggle them on/off. Hover for descriptions of each style.</p>
-                <p>Click <strong>Open Style Studio</strong> for the full style builder with all available styles organized by category. Add custom feedback like "Make it more confident" to further guide generation. After generating, click <strong>Edit Style</strong> to adjust tones and regenerate.</p>
-
-                <h4>API providers</h4>
-                <p><strong>Puter GPT-OSS</strong> is the default and is completely free with no API key required. Uses Puter's user-pays model.</p>
-                <p><strong>OpenRouter</strong> provides access to many models through a single API key. CORS-friendly.</p>
-                <p><strong>Anthropic</strong> connects directly to the Claude Messages API.</p>
-                <p><strong>OpenAI</strong> connects to the Chat Completions API.</p>
-                <p><strong>Google Gemini</strong> connects to the Gemini API.</p>
-                <p><strong>Ollama</strong> runs AI models locally on your machine. No API key needed.</p>
-                <p><strong>Custom Endpoint</strong> supports any OpenAI-compatible API.</p>
-
-                <h4>Profile management</h4>
-                <p>Your profile saves to browser localStorage and auto-loads next time. Download as JSON to reuse across sessions or share with others. Use "Quick View" or "Full Profile" while generating to review, or "Clear Profile" to start fresh.</p>
-
-                <p>All processing happens through the selected API provider. No data is stored on any server.</p>
+                <p style="margin-top: 16px; font-size: 13px; color: #666;">All processing happens through your selected API. No data is stored on any server.</p>
             </div>
         </div>
     </div>

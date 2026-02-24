@@ -3302,7 +3302,14 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         humorous: {
             label: 'Witty',
             description: 'Include wit, clever observations, and light humor where appropriate. Keep it natural, not forced.',
-            keywords: ['funny', 'joke', 'humor', 'laugh', 'comedy', 'witty', 'sarcastic', 'ironic', 'playful'],
+            keywords: ['witty', 'sarcastic', 'ironic', 'clever'],
+            sentiment: 'positive',
+            category: 'emotional'
+        },
+        funny: {
+            label: 'Funny',
+            description: 'Make it genuinely humorous and entertaining. Use jokes, comedic timing, and playful language.',
+            keywords: ['funny', 'joke', 'humor', 'laugh', 'comedy', 'hilarious', 'LOL', 'roast', 'parody'],
             sentiment: 'positive',
             category: 'emotional'
         },
@@ -3492,7 +3499,7 @@ Adapt the writing to fit this platform's culture and expectations while maintain
     function renderStyleStudioOptions() {
         const categories = {
             'Audience & Complexity': ['accessible', 'technical'],
-            'Tone & Register': ['informal', 'conversational', 'formal', 'somber', 'empathetic', 'upbeat', 'humorous', 'kind', 'warm', 'understanding', 'compassionate', 'reassuring', 'encouraging'],
+            'Tone & Register': ['informal', 'conversational', 'formal', 'somber', 'empathetic', 'upbeat', 'humorous', 'funny', 'kind', 'warm', 'understanding', 'compassionate', 'reassuring', 'encouraging'],
             'Purpose & Approach': ['persuasive', 'educational', 'storytelling', 'analytical'],
             'Length & Format': ['concise', 'detailed', 'emoji']
         };
@@ -3542,6 +3549,7 @@ Adapt the writing to fit this platform's culture and expectations while maintain
         empathetic: { warmth: +35, connection: +25, formality: -10 },
         upbeat: { energy: +40, warmth: +15, positivity: +30 },
         humorous: { energy: +20, warmth: +10, formality: -25, engagement: +20 },
+        funny: { energy: +25, warmth: +15, formality: -30, engagement: +25 },
         kind: { warmth: +30, positivity: +20, formality: -5 },
         warm: { warmth: +35, connection: +20 },
         understanding: { warmth: +25, connection: +30, empathy: +25 },

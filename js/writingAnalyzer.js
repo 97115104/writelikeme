@@ -354,8 +354,8 @@ Provide a complexity descriptor (NOT education-based):
 - Perspective: first person, second person, third person, mixed
 
 ### 5. TONE & VOICE
-- Primary tone (professional, friendly, authoritative, humorous, serious, warm, detached, etc.)
-- Emotional register (neutral, passionate, reserved, enthusiastic, contemplative)
+- Primary tone (professional, friendly, authoritative, funny, humorous, serious, warm, detached, etc.)
+- Emotional register (neutral, passionate, reserved, enthusiastic, contemplative, playful, comedic)
 - Voice consistency score (1-10): How consistent is the voice across samples?
 
 ### 5. VOCABULARY PROFILE
