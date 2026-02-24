@@ -414,11 +414,12 @@
 
 .profile-metrics-row-modal.psychological {
     background: linear-gradient(135deg, #f8f5ff 0%, #f5f8ff 100%);
-    border-bottom-color: #d8d0f0;
+    border-color: #d8d0f0;
 }
 
 .profile-metrics-row-modal.psychological .profile-metric-modal {
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.8);
+    border-color: #e8e0f8;
 }
 
 .profile-metrics-row-modal.psychological .metric-label {
@@ -1723,66 +1724,84 @@
 .profile-header-modal {
     display: flex;
     align-items: center;
-    gap: 24px;
-    padding-bottom: 12px;
-    margin-bottom: 12px;
-    border-bottom: 1px solid #eee;
+    gap: 20px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 16px;
 }
 
 .profile-score-modal {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    text-align: center;
+    min-width: 120px;
 }
 
 .profile-score-modal .profile-label {
-    font-size: 12px;
-    color: #666;
+    display: block;
+    font-size: 11px;
+    color: #888;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
 }
 
 .profile-score-modal .complexity-score,
 .profile-score-modal .mastery-level {
-    font-size: 24px;
+    display: block;
+    font-size: 20px;
     font-weight: bold;
     color: #2e7d32;
 }
 
 .profile-meta-modal {
-    font-size: 14px;
-    color: #555;
+    flex: 1;
 }
 
 .profile-meta-modal .technical-level {
+    display: block;
+    font-size: 14px;
     font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
 }
 
 /* Profile Metrics Row in Modal */
 .profile-metrics-row-modal {
     display: flex;
-    gap: 24px;
-    padding: 12px 0;
-    margin-bottom: 12px;
-    border-bottom: 1px solid #eee;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
     flex-wrap: wrap;
 }
 
 .profile-metric-modal {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #eee;
     min-width: 100px;
 }
 
 .profile-metric-modal .metric-label {
-    font-size: 11px;
+    display: block;
+    font-size: 10px;
     color: #888;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
 }
 
 .profile-metric-modal .metric-value {
+    display: block;
     font-size: 18px;
     font-weight: 600;
+    color: #1976d2;
 }
 
 .profile-metric-modal .metric-value[data-score="high"] {
@@ -1808,26 +1827,28 @@
 .profile-grid-modal {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 12px;
     margin-bottom: 16px;
 }
 
 .profile-card-modal {
-    background: #f9f9f9;
+    background: #fff;
+    border: 1px solid #e0e0e0;
     border-radius: 6px;
     padding: 14px;
 }
 
 .profile-card-modal h4 {
-    margin: 0 0 10px 0;
     font-size: 13px;
-    color: #333;
-    font-weight: 600;
+    color: #666;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .profile-card-modal p {
-    font-size: 13px;
-    color: #555;
+    font-size: 14px;
+    color: #333;
     line-height: 1.5;
     margin: 8px 0 0;
 }
@@ -1840,64 +1861,75 @@
 
 /* Profile Sections in Modal */
 .profile-section-modal {
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #eee;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 12px;
 }
 
 .profile-section-modal:last-child {
-    border-bottom: none;
     margin-bottom: 0;
-    padding-bottom: 0;
 }
 
 .profile-section-modal h4 {
-    margin: 0 0 10px 0;
     font-size: 13px;
-    color: #333;
-    font-weight: 600;
+    color: #666;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .profile-section-modal ul {
+    list-style: none;
     margin: 0;
-    padding-left: 20px;
+    padding: 0;
     font-size: 13px;
-    color: #555;
+    color: #444;
     line-height: 1.6;
 }
 
 .profile-section-modal li {
-    margin-bottom: 4px;
+    padding: 4px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.profile-section-modal li:last-child {
+    border-bottom: none;
 }
 
 .profile-section-modal p {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
     margin: 0;
-    font-size: 13px;
-    color: #555;
 }
 
 #full-profile-content .profile-section {
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #eee;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 12px;
 }
 
 #full-profile-content .profile-section:last-child {
-    border-bottom: none;
     margin-bottom: 0;
 }
 
 #full-profile-content .profile-section h4 {
+    font-size: 13px;
+    color: #666;
     margin: 0 0 10px 0;
-    font-size: 14px;
-    color: #333;
-    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 #full-profile-content .profile-section p {
-    margin: 0;
-    color: #555;
+    font-size: 14px;
+    color: #333;
     line-height: 1.5;
+    margin: 0;
 }
 
 #full-profile-content .profile-metrics {
