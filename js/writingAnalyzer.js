@@ -523,6 +523,17 @@ Return ONLY the generated content. No explanations, no meta-commentary, no "Here
         { name: 'Antithetical: it\'s not about', pattern: /\b(it'?s|this is|that'?s) not (about |just |only |merely )?[\w\s]{2,40}[,;]\s*(it'?s|this is|that'?s)/gi, severity: 'critical', category: 'structure' },
         { name: 'Antithetical: less X more Y', pattern: /\b(less|more) (about |of |like )[\w\s]{2,30}(and )?(less|more) (about |of |like )/gi, severity: 'critical', category: 'structure' },
         { name: 'Antithetical: not just X', pattern: /\bnot just\b[^.]{2,50}\bbut (also )?\b/gi, severity: 'high', category: 'structure' },
+        { name: 'Antithetical: isn\'t X nor Y', pattern: /\b(isn't|aren't|wasn't|weren't|is not|are not) (a |an |the )?[\w\-]+[^.]*,?\s*nor\b/gi, severity: 'critical', category: 'structure' },
+        { name: 'Antithetical: split sentence', pattern: /\b(It |This |That )(isn't|wasn't|isn't|is not|was not)[^.]{10,80}\.\s*(It's|It is|This is|That's)/gi, severity: 'critical', category: 'structure' },
+        
+        // Raw/unfiltered AI combos
+        { name: 'AI combo: raw unfiltered', pattern: /\b(raw,? (and )?unfiltered|unfiltered,? (and )?raw|pure,? (and )?(unfiltered|raw)|authentic,? (and )?(raw|unfiltered))\b/gi, severity: 'critical', category: 'vocabulary' },
+        
+        // Flowery metaphorical language
+        { name: 'Flowery: crafted for', pattern: /\b(crafted|designed|engineered|calibrated|calculated) for (applause|impact|effect|maximum|optimal)\b/gi, severity: 'high', category: 'vocabulary' },
+        { name: 'Flowery: glide/dance past', pattern: /\b(glide|dance|sail|float|drift|slip) (past|by|through|over|beyond)\b/gi, severity: 'high', category: 'vocabulary' },
+        { name: 'Flowery: the obvious and the', pattern: /\bthe (obvious|mundane|ordinary|everyday|simple) and the (absurd|extraordinary|profound|sublime|complex)\b/gi, severity: 'high', category: 'vocabulary' },
+        { name: 'Flowery: brains keep', pattern: /\b(brains?|minds?) (keep|keeps|kept) (ticking|turning|churning|working|spinning)\b/gi, severity: 'medium', category: 'vocabulary' },
         
         // Sycophantic phrases - immediate AI tells
         { name: 'Sycophancy: great question', pattern: /\b(great|excellent|fantastic|wonderful|amazing|good) (question|point|observation|thought|idea)[.!]?/gi, severity: 'critical', category: 'tone' },
