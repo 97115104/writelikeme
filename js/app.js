@@ -286,6 +286,9 @@
         elements.btnCloseFallback = document.getElementById('btn-close-fallback');
         elements.btnSwitchOllama = document.getElementById('btn-switch-ollama');
         elements.puterFallbackReason = document.getElementById('puter-fallback-reason');
+        elements.mixedContentModal = document.getElementById('mixed-content-modal');
+        elements.btnCloseMixedContent = document.getElementById('btn-close-mixed-content');
+        elements.btnSwitchPuterMixed = document.getElementById('btn-switch-puter-mixed');
 
         // OS tabs
         elements.osTabs = document.querySelectorAll('.os-tab-btn');
@@ -599,6 +602,8 @@
         elements.btnCloseOllama?.addEventListener('click', () => hideModal('ollama-modal'));
         elements.btnCloseFallback?.addEventListener('click', () => hideModal('puter-fallback-modal'));
         elements.btnSwitchOllama?.addEventListener('click', switchToOllama);
+        elements.btnCloseMixedContent?.addEventListener('click', () => hideModal('mixed-content-modal'));
+        elements.btnSwitchPuterMixed?.addEventListener('click', switchToPuterFromMixedContent);
 
         // Whodoneit button
         document.getElementById('whodoneit-check-btn')?.addEventListener('click', () => {
@@ -1321,7 +1326,11 @@
             const preflight = await ApiClient.preflightCheck(config);
             if (!preflight.ok) {
                 console.error('[WriteMe] Preflight check failed:', preflight.error);
-                throw new Error(preflight.error);
+                const err = new Error(preflight.error);
+                if (preflight.isMixedContent) {
+                    err.isMixedContent = true;
+                }
+                throw err;
             }
             console.log('[WriteMe] Preflight check passed');
 
@@ -1352,6 +1361,10 @@
             if (err.puterFallback) {
                 console.log('[WriteMe] Showing Puter fallback modal');
                 showPuterFallback(err.message);
+                goToStep('input');
+            } else if (err.isMixedContent) {
+                console.log('[WriteMe] Showing mixed content modal');
+                showMixedContentModal();
                 goToStep('input');
             } else if (err.code === 'INVALID_PROFILE_SCHEMA') {
                 console.log('[WriteMe] Showing analysis error modal');
@@ -2065,6 +2078,16 @@
     function showPuterFallback(reason) {
         elements.puterFallbackReason.textContent = reason;
         showModal('puter-fallback-modal');
+    }
+
+    function showMixedContentModal() {
+        showModal('mixed-content-modal');
+    }
+
+    function switchToPuterFromMixedContent() {
+        elements.apiMode.value = 'puter';
+        handleApiModeChange();
+        hideModal('mixed-content-modal');
     }
 
     function showAnalysisError(reason) {

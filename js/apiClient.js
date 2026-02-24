@@ -384,11 +384,31 @@ const ApiClient = (() => {
             const modelName = ollamaModel || PROVIDERS.ollama.defaultModel;
             console.log('[ApiClient] Checking Ollama at', base, 'for model', modelName);
 
+            // Check for mixed content issue (HTTPS page trying to access HTTP localhost)
+            const isSecurePage = window.location.protocol === 'https:';
+            const isHttpOllama = base.startsWith('http:');
+            if (isSecurePage && isHttpOllama) {
+                console.error('[ApiClient] Mixed content blocked: HTTPS page cannot access HTTP Ollama');
+                return {
+                    ok: false,
+                    isMixedContent: true,
+                    error: 'Browser security prevents HTTPS pages from accessing local Ollama (HTTP).'
+                };
+            }
+
             let tagsResponse;
             try {
                 tagsResponse = await fetch(`${base}/api/tags`);
             } catch (err) {
                 console.error('[ApiClient] Ollama connection failed:', err);
+                // Double check if this might be mixed content
+                if (isSecurePage) {
+                    return {
+                        ok: false,
+                        isMixedContent: true,
+                        error: 'Browser security prevents HTTPS pages from accessing local Ollama (HTTP).'
+                    };
+                }
                 return {
                     ok: false,
                     error: 'Cannot connect to Ollama at ' + base + '.\n' +
